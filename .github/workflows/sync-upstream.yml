@@ -21,10 +21,12 @@ concurrency:
 jobs:
   sync:
     name: Check, build, and release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PICOCLAW_ANDROID_API: "21"
+      PICOCLAW_NDK_VERSION: "27.3.13750724"
 
     steps:
       - name: Checkout module repository
@@ -121,6 +123,38 @@ jobs:
       - name: Install build tools
         if: steps.upstream.outputs.needs_build == 'true'
         run: sudo apt-get install -y shellcheck zip unzip jq file
+
+      - name: Configure pinned Android NDK
+        if: steps.upstream.outputs.needs_build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          android_sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          if [[ -z $android_sdk_root ]]; then
+            echo "::error::ANDROID_SDK_ROOT dan ANDROID_HOME tidak tersedia"
+            exit 1
+          fi
+          ndk_root="$android_sdk_root/ndk/$PICOCLAW_NDK_VERSION"
+          compiler="$ndk_root/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android${PICOCLAW_ANDROID_API}-clang"
+          if [[ ! -x $compiler ]]; then
+            sdkmanager_bin="$(command -v sdkmanager || true)"
+            if [[ -z $sdkmanager_bin ]]; then
+              sdkmanager_bin="$android_sdk_root/cmdline-tools/latest/bin/sdkmanager"
+            fi
+            if [[ ! -x $sdkmanager_bin ]]; then
+              echo "::error::sdkmanager tidak ditemukan: $sdkmanager_bin"
+              exit 1
+            fi
+            "$sdkmanager_bin" "ndk;$PICOCLAW_NDK_VERSION"
+          fi
+          if [[ ! -x $compiler ]]; then
+            echo "::error::Compiler Android NDK tidak ditemukan: $compiler"
+            exit 1
+          fi
+          grep -Fq "Pkg.Revision = $PICOCLAW_NDK_VERSION" "$ndk_root/source.properties"
+          echo "PICOCLAW_ANDROID_CC=$compiler" >> "$GITHUB_ENV"
+          "$compiler" --version
 
       - name: Validate module sources
         if: steps.upstream.outputs.needs_build == 'true'

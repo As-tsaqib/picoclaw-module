@@ -1,0 +1,6 @@
+diff --git a/web/backend/systray_stub_nocgo.go b/web/backend/systray_stub_nocgo.go
+--- a/web/backend/systray_stub_nocgo.go
++++ b/web/backend/systray_stub_nocgo.go
+@@ -1 +1 @@
+-//go:build (darwin || freebsd || android) && !cgo
++//go:build android || ((darwin || freebsd) && !cgo)

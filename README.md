@@ -15,6 +15,12 @@ rilis stabil terbaru upstream.
   modul berubah.
 - `picoclaw` dan `picoclaw-launcher` Android ARM64 dibangun dari source,
   termasuk frontend dashboard resmi yang di-embed ke launcher.
+- Resolver DNS native Android (Bionic/netd) digunakan oleh kedua binary agar
+  OAuth, provider, dan Skill Hub mengikuti koneksi jaringan Android tanpa
+  bergantung pada `/etc/resolv.conf`.
+- Patch kompatibilitas yang dilacak di repo mempertahankan mode launcher
+  headless Android ketika cgo aktif; patch dilewati otomatis apabila struktur
+  upstream sudah berubah.
 - WebUI KSU Next untuk start/stop/restart launcher, autostart, status, log, dan
   pemasangan ulang wrapper Termux.
 - Launcher web berjalan otomatis di `http://127.0.0.1:18800` dan tidak diekspos
@@ -94,8 +100,9 @@ Workflow `Sync upstream release` melakukan alur berikut:
 1. meminta release stabil terbaru dari GitHub API;
 2. membandingkannya dengan `UPSTREAM_VERSION` dan revisi modul;
 3. checkout tag upstream dengan riwayat Git lengkap;
-4. memakai versi Go dari `go.mod`, membangun frontend dengan lockfile pnpm,
-   lalu menjalankan target Android resmi upstream;
+4. memakai versi Go dari `go.mod`, menerapkan patch kompatibilitas Android yang
+   diperlukan, membangun frontend dengan lockfile pnpm, lalu menjalankan target
+   Android resmi upstream;
 5. memvalidasi kedua ELF ARM64, merakit ZIP modul, dan membuat checksum;
 6. menerbitkan GitHub Release serta memperbarui `update.json`.
 
@@ -105,13 +112,17 @@ sama perlu dibuat ulang.
 
 ## Build lokal
 
-Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, pnpm, `make`, `zip`, dan
-`file`.
+Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, pnpm, `make`, `zip`,
+`file`, serta compiler ARM64 dari Android NDK. Di Termux compiler
+`aarch64-linux-android-clang` dideteksi otomatis. Pada host Linux lain, arahkan
+`PICOCLAW_ANDROID_CC` ke compiler NDK dan pilih API minimum dengan
+`PICOCLAW_ANDROID_API` (default 21).
 
 ```sh
 git clone https://github.com/sipeed/picoclaw.git upstream
 git -C upstream checkout v0.3.1
-make build SOURCE_DIR="$PWD/upstream" UPSTREAM_TAG=v0.3.1
+PICOCLAW_ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" \
+  make build SOURCE_DIR="$PWD/upstream" UPSTREAM_TAG=v0.3.1
 ```
 
 Artefak berada di `dist/`. Jalankan `make test` untuk pemeriksaan statis dan

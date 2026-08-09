@@ -32,6 +32,14 @@ grep -q '^updateJson=https://raw.githubusercontent.com/As-tsaqib/picoclaw-module
 grep -q 'PICOCLAW_MODULE_WRAPPER=1' "$REPO_DIR/module/termux/picoclaw-wrapper"
 [[ -f $REPO_DIR/module/skip_mount ]]
 [[ ! -d $REPO_DIR/module/system ]]
+grep -Fq "CGO_ENABLED=1 CC=\"\$android_cc_path\"" "$REPO_DIR/scripts/build-upstream.sh"
+grep -Fq $'build\\tCGO_ENABLED=1' "$REPO_DIR/scripts/package-module.sh"
+grep -Fq '//go:build android || ((darwin || freebsd) && !cgo)' \
+  "$REPO_DIR/patches/android-cgo-systray.patch"
+if grep -Fq 'CGO_ENABLED=0 make' "$REPO_DIR/scripts/build-upstream.sh"; then
+  printf 'Build Android tidak boleh menonaktifkan cgo karena akan merusak DNS Android.\n' >&2
+  exit 1
+fi
 
 EXPECTED_SUBCOMMANDS=(
   config onboard agent auth gateway status cron mcp migrate skills model update version

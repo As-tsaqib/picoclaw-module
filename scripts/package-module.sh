@@ -29,7 +29,7 @@ LAUNCHER_SOURCE="$SOURCE_DIR/build/picoclaw-launcher-android-arm64"
 
 validate_elf_arm64() {
   local binary=$1
-  local description
+  local build_metadata description
 
   if [[ ${PICOCLAW_SKIP_ELF_CHECK:-0} == 1 ]]; then
     return 0
@@ -44,6 +44,12 @@ validate_elf_arm64() {
   build_metadata="$(go version -m "$binary")"
   grep -Fq "github.com/sipeed/picoclaw/pkg/config.Version=$UPSTREAM_TAG" <<< "$build_metadata" ||
     die "$binary tidak memuat metadata versi upstream $UPSTREAM_TAG"
+  grep -Fq $'build\tCGO_ENABLED=1' <<< "$build_metadata" ||
+    die "$binary tidak dibangun dengan cgo; resolver DNS native Android tidak tersedia"
+  grep -Fq $'build\tGOOS=android' <<< "$build_metadata" ||
+    die "$binary tidak dibangun untuk GOOS=android"
+  grep -Fq $'build\tGOARCH=arm64' <<< "$build_metadata" ||
+    die "$binary tidak dibangun untuk GOARCH=arm64"
 }
 
 validate_elf_arm64 "$CORE_SOURCE"
@@ -80,6 +86,8 @@ upstreamTag=$UPSTREAM_TAG
 upstreamCommit=$upstream_commit
 moduleVersion=$MODULE_VERSION
 moduleRevision=$MODULE_REVISION
+androidCgo=1
+androidDnsResolver=bionic-netd
 EOF
 
 find "$STAGE_DIR" -type d -exec chmod 0755 {} +
