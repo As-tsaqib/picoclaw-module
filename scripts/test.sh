@@ -58,7 +58,10 @@ chmod 0755 \
 PICOCLAW_SKIP_ELF_CHECK=1 \
   "$SCRIPT_DIR/package-module.sh" "$TEST_DIR/source" v0.3.1 "$TEST_DIR/dist" >/dev/null
 
-ARCHIVE="$TEST_DIR/dist/PicoClaw-Module-v0.3.1-r1-arm64.zip"
+TEST_REVISION="$(tr -d '[:space:]' < "$REPO_DIR/MODULE_REVISION")"
+TEST_VERSION="v0.3.1-r${TEST_REVISION}"
+TEST_VERSION_CODE=$((300100 + 10#$TEST_REVISION))
+ARCHIVE="$TEST_DIR/dist/PicoClaw-Module-${TEST_VERSION}-arm64.zip"
 [[ -f $ARCHIVE ]]
 [[ -f $ARCHIVE.sha256 ]]
 (
@@ -70,8 +73,8 @@ unzip -Z1 "$ARCHIVE" | grep -qx 'module.prop'
 unzip -Z1 "$ARCHIVE" | grep -qx 'bin/picoclaw'
 unzip -Z1 "$ARCHIVE" | grep -qx 'bin/picoclaw-launcher'
 unzip -Z1 "$ARCHIVE" | grep -qx 'webroot/index.html'
-unzip -p "$ARCHIVE" module.prop | grep -qx 'version=v0.3.1-r1'
-unzip -p "$ARCHIVE" module.prop | grep -qx 'versionCode=300101'
+unzip -p "$ARCHIVE" module.prop | grep -qx "version=$TEST_VERSION"
+unzip -p "$ARCHIVE" module.prop | grep -qx "versionCode=$TEST_VERSION_CODE"
 if unzip -p "$ARCHIVE" module.prop | grep -q '@[A-Z_]\+@'; then
   printf 'Placeholder module.prop masih tersisa di archive.\n' >&2
   exit 1
@@ -84,13 +87,15 @@ unzip -q "$ARCHIVE" -d "$TEST_DIR/unpacked"
 [[ -x $TEST_DIR/unpacked/service.sh ]]
 
 "$SCRIPT_DIR/write-update-json.sh" \
-  v0.3.1-r1 \
-  300101 \
+  "$TEST_VERSION" \
+  "$TEST_VERSION_CODE" \
   https://example.com/module.zip \
   https://example.com/changelog \
   "$TEST_DIR/update.json"
 jq -e \
-  '.version == "v0.3.1-r1" and .versionCode == 300101 and .zipUrl == "https://example.com/module.zip"' \
+  --arg version "$TEST_VERSION" \
+  --argjson versionCode "$TEST_VERSION_CODE" \
+  '.version == $version and .versionCode == $versionCode and .zipUrl == "https://example.com/module.zip"' \
   "$TEST_DIR/update.json" >/dev/null
 
 printf 'Semua pemeriksaan lulus.\n'

@@ -36,6 +36,6 @@ tag_commit="$(git -C "$SOURCE_DIR" rev-parse "${UPSTREAM_TAG}^{commit}")"
   die "HEAD source ($head_commit) bukan commit tag $UPSTREAM_TAG ($tag_commit)"
 
 printf 'Building PicoClaw %s for android/arm64...\n' "$UPSTREAM_TAG"
-CGO_ENABLED=0 make -C "$SOURCE_DIR" build-android-bundle
+CGO_ENABLED=0 make -C "$SOURCE_DIR" VERSION="$UPSTREAM_TAG" build-android-bundle
 
 "$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR"

@@ -39,6 +39,11 @@ validate_elf_arm64() {
   description="$(file -b -- "$binary")"
   [[ $description == *ELF\ 64-bit* && $description == *ARM\ aarch64* ]] ||
     die "$binary bukan ELF Android ARM64: $description"
+
+  require_command go
+  build_metadata="$(go version -m "$binary")"
+  grep -Fq "github.com/sipeed/picoclaw/pkg/config.Version=$UPSTREAM_TAG" <<< "$build_metadata" ||
+    die "$binary tidak memuat metadata versi upstream $UPSTREAM_TAG"
 }
 
 validate_elf_arm64 "$CORE_SOURCE"
