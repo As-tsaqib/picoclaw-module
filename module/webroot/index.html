@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#101522">
+    <meta name="color-scheme" content="dark">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:">
+    <title>PicoClaw Module</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <img src="./icon.svg" alt="" width="64" height="64">
+        <div>
+          <p class="eyebrow">KSU NEXT MODULE</p>
+          <h1>PicoClaw</h1>
+          <p class="subtitle">AI agent ringan, hidup langsung di Android.</p>
+        </div>
+      </header>
+
+      <section class="card status-card" aria-live="polite">
+        <div class="status-heading">
+          <span id="status-dot" class="status-dot"></span>
+          <div>
+            <h2 id="status-text">Memuat status…</h2>
+            <p id="status-detail">Menghubungi service modul.</p>
+          </div>
+        </div>
+        <div class="actions primary-actions">
+          <button class="primary" data-action="dashboard">Buka dashboard</button>
+          <button data-action="start">Start</button>
+          <button data-action="stop">Stop</button>
+          <button data-action="restart">Restart</button>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Informasi modul">
+        <article class="metric">
+          <span>Versi modul</span>
+          <strong id="version">—</strong>
+        </article>
+        <article class="metric">
+          <span>Upstream</span>
+          <strong id="upstream">—</strong>
+        </article>
+        <article class="metric">
+          <span>Port lokal</span>
+          <strong id="port">18800</strong>
+        </article>
+        <article class="metric">
+          <span>Wrapper Termux</span>
+          <strong id="wrappers">—</strong>
+        </article>
+      </section>
+
+      <section class="card settings-card">
+        <div>
+          <h2>Jalankan saat boot</h2>
+          <p>Launcher hanya listen di localhost agar tidak terbuka ke LAN.</p>
+        </div>
+        <label class="switch">
+          <input id="autostart" type="checkbox">
+          <span aria-hidden="true"></span>
+          <span class="sr-only">Autostart launcher</span>
+        </label>
+      </section>
+
+      <section class="card tools-card">
+        <div>
+          <h2>Integrasi Termux</h2>
+          <p>Pasang ulang semua alias CLI tanpa menyalin binary ke prefix Termux.</p>
+        </div>
+        <div class="actions">
+          <button data-action="wrappers">Pasang wrapper</button>
+          <button class="icon-button" data-action="refresh" aria-label="Refresh status">↻</button>
+        </div>
+      </section>
+
+      <section class="card log-card">
+        <div class="section-title">
+          <h2>Log launcher</h2>
+          <span>80 baris terakhir</span>
+        </div>
+        <pre id="log">Log belum tersedia.</pre>
+      </section>
+
+      <p class="footnote">Config dan workspace: <code>/data/adb/picoclaw</code></p>
+    </main>
+
+    <div id="message" class="message" hidden></div>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

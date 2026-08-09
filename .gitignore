@@ -1,0 +1,8 @@
+dist/
+.cache/
+upstream/
+*.zip
+*.sha256
+
+module/bin/*
+!module/bin/.gitkeep

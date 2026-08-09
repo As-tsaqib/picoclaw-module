@@ -1,0 +1,74 @@
+#!/system/bin/sh
+# PICOCLAW_MODULE_WRAPPER=1
+
+MODULE_DIR=/data/adb/modules/picoclaw
+DATA_DIR=/data/adb/picoclaw
+CORE_BIN=$MODULE_DIR/bin/picoclaw
+LAUNCHER_BIN=$MODULE_DIR/bin/picoclaw-launcher
+CONTROL_BIN=$MODULE_DIR/control.sh
+
+command_name=${0##*/}
+target_bin=$CORE_BIN
+subcommand=
+
+case "$command_name" in
+  picoclaw)
+    ;;
+  picoclaw-launcher)
+    target_bin=$LAUNCHER_BIN
+    ;;
+  picoclaw-web)
+    target_bin=$LAUNCHER_BIN
+    subcommand='-console -no-browser'
+    ;;
+  picoclaw-ctl)
+    target_bin=$CONTROL_BIN
+    ;;
+  picoclaw-config|picoclaw-onboard|picoclaw-agent|picoclaw-auth|picoclaw-gateway|picoclaw-status|picoclaw-cron|picoclaw-mcp|picoclaw-migrate|picoclaw-skills|picoclaw-model|picoclaw-update|picoclaw-version)
+    subcommand=${command_name#picoclaw-}
+    ;;
+  *)
+    printf 'PicoClaw: wrapper tidak dikenal: %s\n' "$command_name" >&2
+    exit 127
+    ;;
+esac
+
+su_bin=
+for candidate in /system/bin/su /system/xbin/su /sbin/su; do
+  if [ -x "$candidate" ]; then
+    su_bin=$candidate
+    break
+  fi
+done
+if [ -z "$su_bin" ]; then
+  su_bin=$(command -v su 2>/dev/null || true)
+fi
+if [ -z "$su_bin" ]; then
+  printf 'PicoClaw: command su dari KSU Next tidak ditemukan.\n' >&2
+  exit 126
+fi
+
+shell_quote() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+root_command="if [ ! -x $(shell_quote "$target_bin") ]; then"
+root_command="$root_command printf 'PicoClaw: binary modul tidak ditemukan: %s\\n' $(shell_quote "$target_bin") >&2;"
+root_command="$root_command exit 127; fi;"
+root_command="$root_command export HOME=$(shell_quote "$DATA_DIR");"
+root_command="$root_command export PICOCLAW_HOME=$(shell_quote "$DATA_DIR");"
+root_command="$root_command export PICOCLAW_CONFIG=$(shell_quote "$DATA_DIR/config.json");"
+root_command="$root_command export PICOCLAW_BINARY=$(shell_quote "$CORE_BIN");"
+root_command="$root_command export TMPDIR=$(shell_quote "$DATA_DIR/tmp");"
+root_command="$root_command exec $(shell_quote "$target_bin")"
+
+if [ -n "$subcommand" ]; then
+  for fixed_arg in $subcommand; do
+    root_command="$root_command $(shell_quote "$fixed_arg")"
+  done
+fi
+for forwarded_arg in "$@"; do
+  root_command="$root_command $(shell_quote "$forwarded_arg")"
+done
+
+exec "$su_bin" -p -c "$root_command"

@@ -1,0 +1,243 @@
+name: Sync upstream release
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild dan replace asset release meski versinya sama
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream-release
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Check, build, and release
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout module repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Discover latest stable upstream release
+        id: upstream
+        shell: bash
+        env:
+          FORCE_BUILD: ${{ inputs.force || false }}
+        run: |
+          set -Eeuo pipefail
+
+          release_json="$(gh api repos/sipeed/picoclaw/releases/latest)"
+          upstream_tag="$(jq -r '.tag_name' <<< "$release_json")"
+          published_at="$(jq -r '.published_at' <<< "$release_json")"
+
+          if [[ ! $upstream_tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag upstream tidak valid: $upstream_tag"
+            exit 1
+          fi
+
+          revision="$(tr -d '[:space:]' < MODULE_REVISION)"
+          desired_version="${upstream_tag}-r${revision}"
+          recorded_upstream="$(tr -d '[:space:]' < UPSTREAM_VERSION)"
+          recorded_module="$(tr -d '[:space:]' < BUILT_MODULE_VERSION)"
+          needs_build=false
+          reason="already synchronized"
+
+          if [[ $FORCE_BUILD == true ]]; then
+            needs_build=true
+            reason="manual force rebuild"
+          elif [[ $recorded_upstream != "$upstream_tag" ]]; then
+            needs_build=true
+            reason="new upstream release"
+          elif [[ $recorded_module != "$desired_version" ]]; then
+            needs_build=true
+            reason="module revision changed"
+          elif ! gh release view "$desired_version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            needs_build=true
+            reason="release asset is missing"
+          fi
+
+          {
+            echo "tag=$upstream_tag"
+            echo "published_at=$published_at"
+            echo "desired_version=$desired_version"
+            echo "needs_build=$needs_build"
+            echo "reason=$reason"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Upstream check"
+            echo
+            echo "- Latest upstream: \`$upstream_tag\`"
+            echo "- Desired module: \`$desired_version\`"
+            echo "- Build: \`$needs_build\` ($reason)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout upstream release tag
+        if: steps.upstream.outputs.needs_build == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: sipeed/picoclaw
+          ref: ${{ steps.upstream.outputs.tag }}
+          fetch-depth: 0
+          path: upstream
+
+      - name: Setup Go from upstream go.mod
+        if: steps.upstream.outputs.needs_build == 'true'
+        id: setup-go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+
+      - name: Setup pnpm
+        if: steps.upstream.outputs.needs_build == 'true'
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 10.33.0
+          run_install: false
+
+      - name: Setup Node.js
+        if: steps.upstream.outputs.needs_build == 'true'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: upstream/web/frontend/pnpm-lock.yaml
+
+      - name: Install build tools
+        if: steps.upstream.outputs.needs_build == 'true'
+        run: sudo apt-get install -y shellcheck zip unzip jq file
+
+      - name: Validate module sources
+        if: steps.upstream.outputs.needs_build == 'true'
+        run: ./scripts/test.sh
+
+      - name: Compile upstream and package module
+        if: steps.upstream.outputs.needs_build == 'true'
+        run: ./scripts/build-upstream.sh "$GITHUB_WORKSPACE/upstream" "${{ steps.upstream.outputs.tag }}" "$GITHUB_WORKSPACE/dist"
+
+      - name: Read build metadata
+        if: steps.upstream.outputs.needs_build == 'true'
+        id: build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source dist/metadata.env
+          if [[ $MODULE_VERSION != "${{ steps.upstream.outputs.desired_version }}" ]]; then
+            echo "::error::Versi hasil package tidak sesuai: $MODULE_VERSION"
+            exit 1
+          fi
+          {
+            echo "upstream_tag=$UPSTREAM_TAG"
+            echo "module_version=$MODULE_VERSION"
+            echo "version_code=$VERSION_CODE"
+            echo "asset_name=$ASSET_NAME"
+            echo "archive_path=$ARCHIVE_PATH"
+            echo "checksum_path=$CHECKSUM_PATH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare release metadata
+        if: steps.upstream.outputs.needs_build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          gh api "repos/sipeed/picoclaw/releases/tags/${{ steps.upstream.outputs.tag }}" --jq '.body' > dist/upstream-notes.md
+          ./scripts/write-release-notes.sh \
+            "${{ steps.upstream.outputs.tag }}" \
+            "${{ steps.build.outputs.module_version }}" \
+            dist/upstream-notes.md \
+            dist/release-notes.md
+
+      - name: Upload workflow artifact
+        if: steps.upstream.outputs.needs_build == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: picoclaw-module-${{ steps.build.outputs.module_version }}
+          path: |
+            ${{ steps.build.outputs.archive_path }}
+            ${{ steps.build.outputs.checksum_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub release
+        if: steps.upstream.outputs.needs_build == 'true'
+        shell: bash
+        env:
+          FORCE_BUILD: ${{ inputs.force || false }}
+        run: |
+          set -Eeuo pipefail
+          release_tag="${{ steps.build.outputs.module_version }}"
+          release_title="PicoClaw Module $release_tag"
+          archive="${{ steps.build.outputs.archive_path }}"
+          checksum="${{ steps.build.outputs.checksum_path }}"
+
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            if [[ $FORCE_BUILD == true ]]; then
+              gh release upload "$release_tag" "$archive" "$checksum" \
+                --clobber \
+                --repo "$GITHUB_REPOSITORY"
+              gh release edit "$release_tag" \
+                --title "$release_title" \
+                --notes-file dist/release-notes.md \
+                --repo "$GITHUB_REPOSITORY"
+            else
+              asset_name="$(basename "$archive")"
+              checksum_name="$(basename "$checksum")"
+              existing_assets="$(gh release view "$release_tag" --json assets --jq '.assets[].name' --repo "$GITHUB_REPOSITORY")"
+              if ! grep -Fxq "$asset_name" <<< "$existing_assets"; then
+                gh release upload "$release_tag" "$archive" --repo "$GITHUB_REPOSITORY"
+              fi
+              if ! grep -Fxq "$checksum_name" <<< "$existing_assets"; then
+                gh release upload "$release_tag" "$checksum" --repo "$GITHUB_REPOSITORY"
+              fi
+            fi
+          else
+            gh release create "$release_tag" "$archive" "$checksum" \
+              --title "$release_title" \
+              --notes-file dist/release-notes.md \
+              --latest \
+              --repo "$GITHUB_REPOSITORY"
+          fi
+
+      - name: Update repository sync state
+        if: steps.upstream.outputs.needs_build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          module_version="${{ steps.build.outputs.module_version }}"
+          asset_name="${{ steps.build.outputs.asset_name }}"
+          release_base="https://github.com/$GITHUB_REPOSITORY/releases"
+
+          printf '%s\n' "${{ steps.upstream.outputs.tag }}" > UPSTREAM_VERSION
+          printf '%s\n' "$module_version" > BUILT_MODULE_VERSION
+          ./scripts/write-update-json.sh \
+            "$module_version" \
+            "${{ steps.build.outputs.version_code }}" \
+            "$release_base/download/$module_version/$asset_name" \
+            "$release_base/tag/$module_version" \
+            update.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add UPSTREAM_VERSION BUILT_MODULE_VERSION update.json
+          if git diff --cached --quiet; then
+            echo 'Sync state tidak berubah.'
+            exit 0
+          fi
+          git commit -m "chore: sync PicoClaw ${{ steps.upstream.outputs.tag }}"
+          git pull --rebase origin main
+          git push origin HEAD:main
