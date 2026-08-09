@@ -2,13 +2,16 @@
 
 Modul root Android ARM64 untuk [PicoClaw](https://github.com/sipeed/picoclaw),
 ditujukan terutama untuk **KernelSU Next** dan tetap mengikuti format modul
-Magisk/KSU yang umum. Binary CLI dan launcher web dibangun langsung dari tag
-rilis stabil terbaru upstream.
+Magisk/KSU yang umum. Binary CLI dan launcher web dibangun dari fork kustom
+`As-tsaqib/picoclaw` yang memuat release stabil upstream terbaru serta
+perubahan integrasi Telegram.
 
 ## Fitur
 
-- Build reproducible dari tag release resmi `sipeed/picoclaw`, bukan dari
-  branch bergerak.
+- Build terikat pada commit fork yang dapat diaudit dan diverifikasi memuat
+  commit tag release resmi `sipeed/picoclaw`.
+- Metadata `build-info.prop` di dalam ZIP mencatat tag upstream, commit
+  upstream, commit fork, dan repository source kustom.
 - Pemeriksaan upstream otomatis sekali sehari pada pukul **02:17 UTC**
   (10:17 WITA).
 - Release ZIP modul dibuat otomatis hanya ketika versi upstream atau revisi
@@ -98,13 +101,19 @@ workspace, dan log.
 Workflow `Sync upstream release` melakukan alur berikut:
 
 1. meminta release stabil terbaru dari GitHub API;
-2. membandingkannya dengan `UPSTREAM_VERSION` dan revisi modul;
-3. checkout tag upstream dengan riwayat Git lengkap;
+2. membandingkannya dengan `UPSTREAM_VERSION`, revisi modul, dan commit fork;
+3. checkout commit fork kustom dan memverifikasi tag upstream merupakan
+   ancestor-nya;
 4. memakai versi Go dari `go.mod`, menerapkan patch kompatibilitas Android yang
    diperlukan, membangun frontend dengan lockfile pnpm, lalu menjalankan target
    Android resmi upstream;
 5. memvalidasi kedua ELF ARM64, merakit ZIP modul, dan membuat checksum;
 6. menerbitkan GitHub Release serta memperbarui `update.json`.
+
+Workflow pada fork PicoClaw (`As-tsaqib/picoclaw`) berjalan lebih dahulu setiap
+hari untuk menggabungkan release stabil terbaru dari `sipeed/picoclaw` ke branch
+kustom. Jika terjadi konflik, workflow berhenti agar perubahan tidak dibangun
+secara diam-diam. Workflow module berjalan 30 menit kemudian.
 
 Workflow juga dapat dijalankan manual dari tab Actions. Naikkan angka dalam
 `MODULE_REVISION` bila kode modul berubah dan release untuk versi upstream yang
@@ -119,8 +128,8 @@ Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, pnpm, `make`, `zip`,
 `PICOCLAW_ANDROID_API` (default 21).
 
 ```sh
-git clone https://github.com/sipeed/picoclaw.git upstream
-git -C upstream checkout v0.3.1
+git clone https://github.com/As-tsaqib/picoclaw.git upstream
+git -C upstream checkout main
 PICOCLAW_ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" \
   make build SOURCE_DIR="$PWD/upstream" UPSTREAM_TAG=v0.3.1
 ```

@@ -1,9 +1,10 @@
 # Third-party notices
 
-Binary `picoclaw` dan `picoclaw-launcher` dibuat dari
-[`sipeed/picoclaw`](https://github.com/sipeed/picoclaw), yang didistribusikan
-dengan lisensi MIT. Salinan lisensi upstream ikut dimasukkan ke setiap ZIP
-modul sebagai `LICENSE.picoclaw`.
+Binary `picoclaw` dan `picoclaw-launcher` dibuat dari fork
+[`As-tsaqib/picoclaw`](https://github.com/As-tsaqib/picoclaw), yang menyertakan
+release upstream [`sipeed/picoclaw`](https://github.com/sipeed/picoclaw).
+Keduanya didistribusikan dengan lisensi MIT. Salinan lisensi upstream ikut
+dimasukkan ke setiap ZIP modul sebagai `LICENSE.picoclaw`.
 
 Build Android mengubah build constraint stub system tray upstream agar launcher
 headless dapat memakai cgo dan resolver Bionic/netd. Patch sumber lengkap

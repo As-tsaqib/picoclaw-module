@@ -33,7 +33,16 @@ grep -q 'PICOCLAW_MODULE_WRAPPER=1' "$REPO_DIR/module/termux/picoclaw-wrapper"
 [[ -f $REPO_DIR/module/skip_mount ]]
 [[ ! -d $REPO_DIR/module/system ]]
 grep -Fq "CGO_ENABLED=1 CC=\"\$android_cc_path\"" "$REPO_DIR/scripts/build-upstream.sh"
+# The dollar expressions below are literal source-code assertions.
+# shellcheck disable=SC2016
+grep -Fq 'VERSION="$MODULE_VERSION"' "$REPO_DIR/scripts/build-upstream.sh"
+# shellcheck disable=SC2016
+grep -Fq 'merge-base --is-ancestor "$tag_commit" "$head_commit"' \
+  "$REPO_DIR/scripts/build-upstream.sh"
 grep -Fq $'build\\tCGO_ENABLED=1' "$REPO_DIR/scripts/package-module.sh"
+# shellcheck disable=SC2016
+grep -Fq 'sourceRepo=$SOURCE_REPOSITORY' "$REPO_DIR/scripts/package-module.sh"
+grep -Eq '^[0-9a-f]{40}$' "$REPO_DIR/BUILT_SOURCE_COMMIT"
 grep -Fq '//go:build android || ((darwin || freebsd) && !cgo)' \
   "$REPO_DIR/patches/android-cgo-systray.patch"
 if grep -Fq 'CGO_ENABLED=0 make' "$REPO_DIR/scripts/build-upstream.sh"; then
@@ -83,6 +92,9 @@ unzip -Z1 "$ARCHIVE" | grep -qx 'bin/picoclaw-launcher'
 unzip -Z1 "$ARCHIVE" | grep -qx 'webroot/index.html'
 unzip -p "$ARCHIVE" module.prop | grep -qx "version=$TEST_VERSION"
 unzip -p "$ARCHIVE" module.prop | grep -qx "versionCode=$TEST_VERSION_CODE"
+unzip -p "$ARCHIVE" build-info.prop | grep -qx 'customSource=1'
+unzip -p "$ARCHIVE" build-info.prop | grep -qx \
+  'sourceRepo=https://github.com/As-tsaqib/picoclaw'
 if unzip -p "$ARCHIVE" module.prop | grep -q '@[A-Z_]\+@'; then
   printf 'Placeholder module.prop masih tersisa di archive.\n' >&2
   exit 1

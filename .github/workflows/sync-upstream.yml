@@ -27,6 +27,8 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PICOCLAW_ANDROID_API: "21"
       PICOCLAW_NDK_VERSION: "27.3.13750724"
+      PICOCLAW_SOURCE_REPOSITORY: "As-tsaqib/picoclaw"
+      PICOCLAW_SOURCE_REF: "main"
 
     steps:
       - name: Checkout module repository
@@ -55,6 +57,15 @@ jobs:
           desired_version="${upstream_tag}-r${revision}"
           recorded_upstream="$(tr -d '[:space:]' < UPSTREAM_VERSION)"
           recorded_module="$(tr -d '[:space:]' < BUILT_MODULE_VERSION)"
+          recorded_source=""
+          if [[ -f BUILT_SOURCE_COMMIT ]]; then
+            recorded_source="$(tr -d '[:space:]' < BUILT_SOURCE_COMMIT)"
+          fi
+          source_sha="$(gh api "repos/$PICOCLAW_SOURCE_REPOSITORY/commits/$PICOCLAW_SOURCE_REF" --jq '.sha')"
+          [[ $source_sha =~ ^[0-9a-f]{40}$ ]] || {
+            echo "::error::Commit source fork tidak valid: $source_sha"
+            exit 1
+          }
           needs_build=false
           reason="already synchronized"
 
@@ -67,6 +78,13 @@ jobs:
           elif [[ $recorded_module != "$desired_version" ]]; then
             needs_build=true
             reason="module revision changed"
+          elif [[ -z $recorded_source ]]; then
+            needs_build=true
+            reason="source provenance belum tercatat"
+          elif [[ $recorded_source != "$source_sha" ]]; then
+            echo "::error::Source fork berubah ($recorded_source -> $source_sha) tetapi MODULE_REVISION belum dinaikkan."
+            echo "::error::Naikkan MODULE_REVISION agar release module tidak menimpa asset versi yang sama."
+            exit 1
           elif ! gh release view "$desired_version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             needs_build=true
             reason="release asset is missing"
@@ -76,6 +94,9 @@ jobs:
             echo "tag=$upstream_tag"
             echo "published_at=$published_at"
             echo "desired_version=$desired_version"
+            echo "source_repository=$PICOCLAW_SOURCE_REPOSITORY"
+            echo "source_ref=$PICOCLAW_SOURCE_REF"
+            echo "source_sha=$source_sha"
             echo "needs_build=$needs_build"
             echo "reason=$reason"
           } >> "$GITHUB_OUTPUT"
@@ -88,14 +109,37 @@ jobs:
             echo "- Build: \`$needs_build\` ($reason)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Checkout upstream release tag
+      - name: Checkout customized PicoClaw source
         if: steps.upstream.outputs.needs_build == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: sipeed/picoclaw
-          ref: ${{ steps.upstream.outputs.tag }}
+          repository: ${{ steps.upstream.outputs.source_repository }}
+          ref: ${{ steps.upstream.outputs.source_sha }}
           fetch-depth: 0
           path: upstream
+
+      - name: Verify customized source includes upstream release
+        if: steps.upstream.outputs.needs_build == 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git -C upstream remote add canonical https://github.com/sipeed/picoclaw.git
+          git -C upstream fetch --no-tags canonical \
+            "refs/tags/${{ steps.upstream.outputs.tag }}:refs/tags/${{ steps.upstream.outputs.tag }}"
+          source_commit="$(git -C upstream rev-parse HEAD)"
+          upstream_commit="$(git -C upstream rev-parse '${{ steps.upstream.outputs.tag }}^{commit}')"
+          if ! git -C upstream merge-base --is-ancestor "$upstream_commit" "$source_commit"; then
+            echo "::error::Fork $source_commit belum memuat upstream ${{ steps.upstream.outputs.tag }} ($upstream_commit)."
+            echo "::error::Jalankan workflow Sync upstream release pada As-tsaqib/picoclaw terlebih dahulu."
+            exit 1
+          fi
+          {
+            echo "### Customized source"
+            echo
+            echo "- Repository: \`${{ steps.upstream.outputs.source_repository }}\`"
+            echo "- Commit: \`$source_commit\`"
+            echo "- Upstream base: \`${{ steps.upstream.outputs.tag }}\` (\`$upstream_commit\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Setup Go from upstream go.mod
         if: steps.upstream.outputs.needs_build == 'true'
@@ -162,7 +206,10 @@ jobs:
 
       - name: Compile upstream and package module
         if: steps.upstream.outputs.needs_build == 'true'
-        run: ./scripts/build-upstream.sh "$GITHUB_WORKSPACE/upstream" "${{ steps.upstream.outputs.tag }}" "$GITHUB_WORKSPACE/dist"
+        env:
+          PICOCLAW_SOURCE_REPOSITORY_URL: https://github.com/${{ steps.upstream.outputs.source_repository }}
+          PICOCLAW_SOURCE_COMMIT: ${{ steps.upstream.outputs.source_sha }}
+        run: ./scripts/build-upstream.sh "$GITHUB_WORKSPACE/upstream" "${{ steps.upstream.outputs.tag }}" "$GITHUB_WORKSPACE/dist" "${{ steps.upstream.outputs.source_sha }}"
 
       - name: Read build metadata
         if: steps.upstream.outputs.needs_build == 'true'
@@ -175,6 +222,10 @@ jobs:
             echo "::error::Versi hasil package tidak sesuai: $MODULE_VERSION"
             exit 1
           fi
+          if [[ $SOURCE_COMMIT != "${{ steps.upstream.outputs.source_sha }}" ]]; then
+            echo "::error::Commit source hasil build tidak sesuai: $SOURCE_COMMIT"
+            exit 1
+          fi
           {
             echo "upstream_tag=$UPSTREAM_TAG"
             echo "module_version=$MODULE_VERSION"
@@ -182,6 +233,7 @@ jobs:
             echo "asset_name=$ASSET_NAME"
             echo "archive_path=$ARCHIVE_PATH"
             echo "checksum_path=$CHECKSUM_PATH"
+            echo "source_commit=$SOURCE_COMMIT"
           } >> "$GITHUB_OUTPUT"
 
       - name: Prepare release metadata
@@ -194,7 +246,9 @@ jobs:
             "${{ steps.upstream.outputs.tag }}" \
             "${{ steps.build.outputs.module_version }}" \
             dist/upstream-notes.md \
-            dist/release-notes.md
+            dist/release-notes.md \
+            "${{ steps.upstream.outputs.source_repository }}" \
+            "${{ steps.upstream.outputs.source_sha }}"
 
       - name: Upload workflow artifact
         if: steps.upstream.outputs.needs_build == 'true'
@@ -258,6 +312,7 @@ jobs:
 
           printf '%s\n' "${{ steps.upstream.outputs.tag }}" > UPSTREAM_VERSION
           printf '%s\n' "$module_version" > BUILT_MODULE_VERSION
+          printf '%s\n' "${{ steps.build.outputs.source_commit }}" > BUILT_SOURCE_COMMIT
           ./scripts/write-update-json.sh \
             "$module_version" \
             "${{ steps.build.outputs.version_code }}" \
@@ -267,11 +322,11 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add UPSTREAM_VERSION BUILT_MODULE_VERSION update.json
+          git add UPSTREAM_VERSION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT update.json
           if git diff --cached --quiet; then
             echo 'Sync state tidak berubah.'
             exit 0
           fi
-          git commit -m "chore: sync PicoClaw ${{ steps.upstream.outputs.tag }}"
+          git commit -m "chore: sync PicoClaw ${{ steps.upstream.outputs.tag }} (${{ steps.build.outputs.source_commit }})"
           git pull --rebase origin main
           git push origin HEAD:main

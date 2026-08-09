@@ -9,9 +9,10 @@ source "$SCRIPT_DIR/lib.sh"
 SOURCE_DIR=${1:-}
 UPSTREAM_TAG_INPUT=${2:-}
 OUTPUT_DIR=${3:-"$REPO_DIR/dist"}
+SOURCE_COMMIT_INPUT=${4:-${PICOCLAW_SOURCE_COMMIT:-}}
 
 [[ -n $SOURCE_DIR && -n $UPSTREAM_TAG_INPUT ]] || {
-  printf 'Usage: %s SOURCE_DIR UPSTREAM_TAG [OUTPUT_DIR]\n' "$0" >&2
+  printf 'Usage: %s SOURCE_DIR UPSTREAM_TAG [OUTPUT_DIR] [SOURCE_COMMIT]\n' "$0" >&2
   exit 2
 }
 
@@ -28,12 +29,22 @@ require_command file
 
 [[ -f $SOURCE_DIR/go.mod ]] || die "go.mod upstream tidak ditemukan di $SOURCE_DIR"
 grep -qx 'module github.com/sipeed/picoclaw' "$SOURCE_DIR/go.mod" ||
-  die "SOURCE_DIR bukan source tree sipeed/picoclaw"
+  die "SOURCE_DIR bukan source tree PicoClaw"
+
+if ! git -C "$SOURCE_DIR" diff --quiet ||
+  ! git -C "$SOURCE_DIR" diff --cached --quiet; then
+  die "SOURCE_DIR harus bersih sebelum build"
+fi
 
 head_commit="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
 tag_commit="$(git -C "$SOURCE_DIR" rev-parse "${UPSTREAM_TAG}^{commit}")"
-[[ $head_commit == "$tag_commit" ]] ||
-  die "HEAD source ($head_commit) bukan commit tag $UPSTREAM_TAG ($tag_commit)"
+if [[ -n $SOURCE_COMMIT_INPUT && $head_commit != "$SOURCE_COMMIT_INPUT" ]]; then
+  die "HEAD source ($head_commit) tidak sesuai commit yang diminta ($SOURCE_COMMIT_INPUT)"
+fi
+git -C "$SOURCE_DIR" merge-base --is-ancestor "$tag_commit" "$head_commit" ||
+  die "HEAD source ($head_commit) belum memuat commit upstream $UPSTREAM_TAG ($tag_commit)"
+
+source_repository="${PICOCLAW_SOURCE_REPOSITORY_URL:-https://github.com/As-tsaqib/picoclaw}"
 
 android_systray_stub="$SOURCE_DIR/web/backend/systray_stub_nocgo.go"
 android_systray_patch="$REPO_DIR/patches/android-cgo-systray.patch"
@@ -85,6 +96,9 @@ android_target="$($android_cc_path -dumpmachine)"
 printf 'Building PicoClaw %s for android/arm64...\n' "$UPSTREAM_TAG"
 printf 'Using cgo compiler %s (%s).\n' "$android_cc_path" "$android_target"
 CGO_ENABLED=1 CC="$android_cc_path" \
-  make -C "$SOURCE_DIR" VERSION="$UPSTREAM_TAG" build-android-bundle
+  make -C "$SOURCE_DIR" VERSION="$MODULE_VERSION" build-android-bundle
 
-"$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR"
+PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository" \
+PICOCLAW_SOURCE_COMMIT="$head_commit" \
+PICOCLAW_UPSTREAM_COMMIT="$tag_commit" \
+  "$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"
