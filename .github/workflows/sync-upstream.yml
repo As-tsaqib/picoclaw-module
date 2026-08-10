@@ -87,9 +87,11 @@ jobs:
             needs_build=true
             reason="source provenance belum tercatat"
           elif [[ $recorded_source != "$source_sha" ]]; then
-            echo "::error::Source fork berubah ($recorded_source -> $source_sha) tetapi MODULE_REVISION belum dinaikkan."
-            echo "::error::Naikkan MODULE_REVISION agar release module tidak menimpa asset versi yang sama."
-            exit 1
+            needs_build=true
+            reason="fork source commit updated ($recorded_source -> $source_sha)"
+            revision=$((revision + 1))
+            desired_version="${upstream_tag}-r${revision}"
+            printf '%s\n' "$revision" > MODULE_REVISION
           elif ! gh release view "$desired_version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             needs_build=true
             reason="release asset is missing"
@@ -327,7 +329,7 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add UPSTREAM_VERSION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT update.json
+          git add UPSTREAM_VERSION MODULE_REVISION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT update.json
           if git diff --cached --quiet; then
             echo 'Sync state tidak berubah.'
             exit 0
