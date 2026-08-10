@@ -2,5 +2,6 @@
   "version": "v0.3.1-r5",
   "versionCode": 300105,
   "zipUrl": "https://github.com/As-tsaqib/picoclaw-module/releases/download/v0.3.1-r5/PicoClaw-Module-v0.3.1-r5-arm64.zip",
-  "changelog": "https://github.com/As-tsaqib/picoclaw-module/releases/tag/v0.3.1-r5"
+  "changelog": "https://github.com/As-tsaqib/picoclaw-module/releases/tag/v0.3.1-r5",
+  "banner": "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/banner.png"
 }

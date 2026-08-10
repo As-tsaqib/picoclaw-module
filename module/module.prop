@@ -7,3 +7,4 @@ description=PicoClaw kustom berbasis @UPSTREAM_TAG@ untuk Android ARM64, lengkap
 updateJson=https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/update.json
 webuiIcon=webroot/icon.svg
 actionIcon=webroot/icon.svg
+banner=banner.png

@@ -31,6 +31,7 @@ jq -n \
   --argjson versionCode "$VERSION_CODE" \
   --arg zipUrl "$ZIP_URL" \
   --arg changelog "$CHANGELOG_URL" \
-  '{version: $version, versionCode: $versionCode, zipUrl: $zipUrl, changelog: $changelog}' \
+  --arg banner "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/banner.png" \
+  '{version: $version, versionCode: $versionCode, zipUrl: $zipUrl, changelog: $changelog, banner: $banner}' \
   > "$TEMP_FILE"
 mv -f -- "$TEMP_FILE" "$OUTPUT"

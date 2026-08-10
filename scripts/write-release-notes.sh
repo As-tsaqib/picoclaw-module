@@ -30,7 +30,11 @@ SOURCE_COMMIT=${6:-unknown}
   printf '4. Buka WebUI modul atau `http://127.0.0.1:18800`.\n\n'
   printf '> Target: Android ARM64. Binary core dan launcher web dikompilasi dari source fork kustom dengan resolver DNS native Android (Bionic/netd).\n\n'
   printf '> Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.\n\n'
-  printf '## Changelog upstream\n\n'
-  cat -- "$UPSTREAM_NOTES"
+  cleaned_notes="$(python3 "$SCRIPT_DIR/ci/clean-release-notes.py" < "$UPSTREAM_NOTES" 2>/dev/null || cat -- "$UPSTREAM_NOTES")"
+  if [ -n "$cleaned_notes" ]; then
+    printf '%s\n' "$cleaned_notes"
+  else
+    printf '[Full Changelog](https://github.com/sipeed/picoclaw/releases/tag/%s)\n' "$UPSTREAM_TAG"
+  fi
   printf '\n'
 } > "$OUTPUT"
