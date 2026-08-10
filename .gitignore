@@ -6,3 +6,8 @@ upstream/
 
 module/bin/*
 !module/bin/.gitkeep
+
+webui/node_modules/
+webui/dist/
+.vite/
+

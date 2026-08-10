@@ -22,8 +22,12 @@ if command -v shellcheck >/dev/null 2>&1; then
 fi
 
 if command -v node >/dev/null 2>&1; then
-  node --check "$REPO_DIR/module/webroot/app.js"
-  node --check "$REPO_DIR/module/webroot/kernelsu.js"
+  if [[ -f "$REPO_DIR/module/webroot/app.js" ]]; then
+    node --check "$REPO_DIR/module/webroot/app.js"
+  fi
+  if [[ -f "$REPO_DIR/module/webroot/kernelsu.js" ]]; then
+    node --check "$REPO_DIR/module/webroot/kernelsu.js"
+  fi
 fi
 
 grep -q '^id=picoclaw$' "$REPO_DIR/module/module.prop"
@@ -73,7 +77,7 @@ chmod 0755 \
   "$TEST_DIR/source/build/picoclaw-launcher-android-arm64"
 
 PICOCLAW_SKIP_ELF_CHECK=1 \
-  "$SCRIPT_DIR/package-module.sh" "$TEST_DIR/source" v0.3.1 "$TEST_DIR/dist" >/dev/null
+  bash "$SCRIPT_DIR/package-module.sh" "$TEST_DIR/source" v0.3.1 "$TEST_DIR/dist" >/dev/null
 
 TEST_REVISION="$(tr -d '[:space:]' < "$REPO_DIR/MODULE_REVISION")"
 TEST_VERSION="v0.3.1-r${TEST_REVISION}"
@@ -106,7 +110,7 @@ unzip -q "$ARCHIVE" -d "$TEST_DIR/unpacked"
 [[ -x $TEST_DIR/unpacked/bin/picoclaw-launcher ]]
 [[ -x $TEST_DIR/unpacked/service.sh ]]
 
-"$SCRIPT_DIR/write-update-json.sh" \
+bash "$SCRIPT_DIR/write-update-json.sh" \
   "$TEST_VERSION" \
   "$TEST_VERSION_CODE" \
   https://example.com/module.zip \

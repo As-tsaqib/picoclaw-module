@@ -101,4 +101,4 @@ CGO_ENABLED=1 CC="$android_cc_path" \
 PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository" \
 PICOCLAW_SOURCE_COMMIT="$head_commit" \
 PICOCLAW_UPSTREAM_COMMIT="$tag_commit" \
-  "$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"
+  bash "$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"

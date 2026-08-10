@@ -12,6 +12,7 @@ PICO_RUN_DIR=$PICO_DATA_DIR/run
 PICO_LOG_DIR=$PICO_DATA_DIR/logs
 PICO_LOG=$PICO_LOG_DIR/launcher-module.log
 PICO_PID_FILE=$PICO_RUN_DIR/launcher.pid
+PICO_MANUAL_STOP=$PICO_RUN_DIR/manual_stop
 PICO_TMP_DIR=$PICO_DATA_DIR/tmp
 PICO_CORE_BIN=$MODDIR/bin/picoclaw
 PICO_LAUNCHER_BIN=$MODDIR/bin/picoclaw-launcher
@@ -87,6 +88,7 @@ launcher_is_running() {
 
 launcher_start() {
   ensure_data_dirs
+  rm -f "$PICO_MANUAL_STOP" 2>/dev/null || true
 
   if launcher_is_running; then
     module_log "Launcher sudah berjalan (PID $(launcher_pid))."
@@ -135,6 +137,8 @@ launcher_start() {
 }
 
 launcher_stop() {
+  touch "$PICO_MANUAL_STOP" 2>/dev/null || true
+
   if ! launcher_is_running; then
     rm -f "$PICO_PID_FILE"
     module_log "Launcher tidak sedang berjalan."

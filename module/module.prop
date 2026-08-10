@@ -1,9 +1,9 @@
 id=picoclaw
-name=PicoClaw for Android
+name=PicoClaw
 version=@MODULE_VERSION@
 versionCode=@VERSION_CODE@
 author=As-tsaqib
-description=PicoClaw kustom berbasis @UPSTREAM_TAG@ untuk Android ARM64, lengkap dengan launcher web dan wrapper Termux tanpa su manual.
+description=Lightweight AI agent optimized for Android
 updateJson=https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/update.json
 webuiIcon=webroot/icon.svg
 actionIcon=webroot/icon.svg

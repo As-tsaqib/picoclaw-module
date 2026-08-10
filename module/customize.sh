@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 ui_print '***************************************'
-ui_print '       PicoClaw Module for Android     '
+ui_print '             PicoClaw Module           '
 ui_print '***************************************'
 
 case "$ARCH" in

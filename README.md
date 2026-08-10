@@ -69,6 +69,9 @@ picoclaw-agent "Halo"
 picoclaw-status
 picoclaw-gateway
 picoclaw-ctl status
+picoclaw-ctl port 18801
+picoclaw-ctl backup
+picoclaw-ctl restore /sdcard/Download/picoclaw-backup-20260810_220000.tar.gz
 picoclaw-ctl restart
 picoclaw-web -port 18801
 ```
