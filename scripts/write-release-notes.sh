@@ -2,6 +2,8 @@
 
 set -Eeuo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 UPSTREAM_TAG=${1:-}
 MODULE_VERSION=${2:-}
 UPSTREAM_NOTES=${3:-}
