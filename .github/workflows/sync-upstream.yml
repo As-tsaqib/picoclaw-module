@@ -6,7 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Rebuild dan replace asset release meski versinya sama
+        description: Rebuild meski versi dan source sudah tersinkron
+        required: false
+        default: false
+        type: boolean
+      publish:
+        description: Terbitkan atau perbarui GitHub Release setelah build
         required: false
         default: false
         type: boolean
@@ -237,7 +242,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Prepare release metadata
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -262,7 +267,7 @@ jobs:
           retention-days: 14
 
       - name: Publish GitHub release
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         env:
           FORCE_BUILD: ${{ inputs.force || false }}
@@ -302,7 +307,7 @@ jobs:
           fi
 
       - name: Update repository sync state
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         run: |
           set -Eeuo pipefail
