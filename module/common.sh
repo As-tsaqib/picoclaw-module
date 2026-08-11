@@ -110,6 +110,8 @@ launcher_start() {
   export PICOCLAW_CONFIG="$PICO_CONFIG"
   export PICOCLAW_BINARY="$PICO_CORE_BIN"
   export TMPDIR="$PICO_TMP_DIR"
+  export NO_COLOR=1
+  export TERM=dumb
   if [ -n "$android_tz" ]; then
     export TZ="$android_tz"
   fi

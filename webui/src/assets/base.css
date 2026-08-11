@@ -18,6 +18,20 @@
   --radius-lg: 12px;
 }
 
+[data-theme="light"] {
+  --c-bg: #f6f8fa;
+  --c-surface: #ffffff;
+  --c-surface-hi: #eaeef2;
+  --c-border: #d0d7de;
+  --c-text: #1f2328;
+  --c-text-dim: #656d76;
+  --c-accent: #0969da;
+  --c-accent-dim: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  --c-ok: #1a7f37;
+  --c-warn: #9a6700;
+  --c-err: #cf222e;
+}
+
 html, body, #app {
   height: 100dvh;
   margin: 0;

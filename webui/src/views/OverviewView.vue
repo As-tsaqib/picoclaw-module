@@ -55,20 +55,20 @@
         <span class="info-value">{{ store.status.VERSION || '—' }}</span>
       </div>
       <div class="info-cell info-cell-action">
-        <div class="info-cell-top">
-          <span class="info-label">Termux Wrappers</span>
+        <span class="info-label">Termux Wrappers</span>
+        <div class="info-value-row">
+          <span class="info-value" :class="store.status.WRAPPERS === 'ready' ? 'val-ok' : 'val-warn'">
+            {{ wrapperLabel(store.status.WRAPPERS) }}
+          </span>
           <button
             class="btn-icon-sm"
             :disabled="store.busy"
             @click="store.executeAction('wrappers')"
             title="Sync wrappers"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+            <svg :class="{ spinning: store.busy }" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
           </button>
         </div>
-        <span class="info-value" :class="store.status.WRAPPERS === 'ready' ? 'val-ok' : 'val-warn'">
-          {{ wrapperLabel(store.status.WRAPPERS) }}
-        </span>
       </div>
     </section>
 
@@ -153,7 +153,7 @@
             :key="i"
             class="log-line"
             :class="logLineClass(line)"
-          ><span class="log-num">{{ i + 1 }}</span>{{ line }}</div>
+          >{{ line }}</div>
         </template>
         <div v-else class="log-empty">No log entries.</div>
       </div>
@@ -228,12 +228,28 @@ function triggerRestore() {
   if (path && path.trim()) store.executeAction('restore', path.trim());
 }
 
+function cleanLogLine(rawLine) {
+  if (!rawLine) return '';
+  // 1. Strip ANSI escape sequences and color codes like [38;2;213;70;70m
+  let clean = rawLine
+    .replace(/[\u001b\x1b]\[[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\[\d{1,3}(?:;\d{1,3})*m/g, '')
+    .replace(/[\u0000-\u0009\u000B-\u001F\u007F-\u009F]/g, '');
+
+  // 2. Strip lines that consist solely of box drawing / ASCII banner characters
+  clean = clean.replace(/^[█░▒▓┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▔▕▖▗▘▙▚▛▜▝▞▟\s]+$/, '');
+  return clean.trim();
+}
+
 const logSearch = ref('');
 const logContainer = ref(null);
 
 const filteredLogLines = computed(() => {
   if (!store.logs) return [];
-  const lines = store.logs.split('\n').filter((l) => l.trim());
+  const lines = store.logs
+    .split('\n')
+    .map(cleanLogLine)
+    .filter((l) => l.length > 0);
   if (!logSearch.value.trim()) return lines;
   const q = logSearch.value.toLowerCase();
   return lines.filter((l) => l.toLowerCase().includes(q));

@@ -1,7 +1,34 @@
 @import './base.css';
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   user-select: none;
+}
+
+/* ─── Global Touch & Ripple ─── */
+.btn, .btn-icon, .btn-icon-sm, .chip, .toggle, .btn-link, .btn-danger, .toast-close {
+  position: relative;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(0);
+  animation: ripple-anim 0.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* ─── App Shell ─── */
@@ -35,18 +62,17 @@ body {
   gap: 10px;
 }
 
-.brand-mark {
-  width: 28px;
-  height: 28px;
+.brand-logo {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
   border-radius: 6px;
-  background: var(--c-accent);
-  color: var(--c-bg);
-  font-weight: 800;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.brand-logo:hover {
+  transform: scale(1.1) rotate(-4deg);
 }
 
 .brand-name {
@@ -90,12 +116,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, border-color 0.15s;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
 
 .btn-icon:hover {
   color: var(--c-text);
   border-color: var(--c-text-dim);
+  transform: translateY(-1px);
+}
+
+.btn-icon:active {
+  transform: scale(0.88) translateY(0) !important;
 }
 
 @keyframes spin {
@@ -252,13 +283,28 @@ body {
   font-weight: 600;
   padding: 8px 16px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
   white-space: nowrap;
 }
 
-.btn:hover { border-color: var(--c-text-dim); }
-.btn:active { opacity: 0.8; }
-.btn:disabled { opacity: 0.35; pointer-events: none; }
+.btn:hover {
+  border-color: var(--c-text-dim);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.25);
+}
+
+.btn:active {
+  transform: scale(0.94) translateY(0) !important;
+  opacity: 0.88;
+  box-shadow: none !important;
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  transform: none !important;
+  box-shadow: none !important;
+}
 
 .btn-primary {
   background: var(--c-accent);
@@ -555,29 +601,22 @@ body {
 .log-box::-webkit-scrollbar { display: none; }
 
 .log-line {
-  padding: 2px 10px;
+  padding: 6px 12px;
   font-family: "SF Mono", "Fira Mono", Consolas, monospace;
-  font-size: 11px;
-  line-height: 1.6;
-  white-space: pre;
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
   color: var(--c-text);
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-border) 30%, transparent);
   transition: background 0.1s;
 }
 
-.log-line:hover { background: color-mix(in srgb, var(--c-text) 4%, transparent); }
-
-.log-num {
-  color: var(--c-text-dim);
-  opacity: 0.4;
-  font-size: 10px;
-  min-width: 24px;
-  text-align: right;
-  user-select: none;
-  flex-shrink: 0;
+.log-line:last-child {
+  border-bottom: none;
 }
+
+.log-line:hover { background: color-mix(in srgb, var(--c-text) 4%, transparent); }
 
 .log-err { color: var(--c-err); }
 .log-warn { color: var(--c-warn); }
@@ -640,10 +679,10 @@ body {
   gap: 2px;
 }
 
-.info-cell-top {
+.info-value-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
 }
 
 .btn-icon-sm {
@@ -657,7 +696,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, border-color 0.15s;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s, border-color 0.15s, background 0.15s;
   flex-shrink: 0;
   padding: 0;
 }
@@ -665,9 +704,15 @@ body {
 .btn-icon-sm:hover {
   color: var(--c-accent);
   border-color: var(--c-accent);
+  transform: translateY(-1px);
+}
+
+.btn-icon-sm:active {
+  transform: scale(0.86) translateY(0) !important;
 }
 
 .btn-icon-sm:disabled {
   opacity: 0.35;
   pointer-events: none;
+  transform: none !important;
 }
