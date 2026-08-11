@@ -320,16 +320,20 @@ jobs:
           printf '%s\n' "${{ steps.upstream.outputs.tag }}" > UPSTREAM_VERSION
           printf '%s\n' "$module_version" > BUILT_MODULE_VERSION
           printf '%s\n' "${{ steps.build.outputs.source_commit }}" > BUILT_SOURCE_COMMIT
+          if [[ -f dist/release-notes.md ]]; then
+            cp -f dist/release-notes.md CHANGELOG.md
+          fi
+          raw_changelog="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/CHANGELOG.md"
           ./scripts/write-update-json.sh \
             "$module_version" \
             "${{ steps.build.outputs.version_code }}" \
             "$release_base/download/$module_version/$asset_name" \
-            "$release_base/tag/$module_version" \
+            "$raw_changelog" \
             update.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add UPSTREAM_VERSION MODULE_REVISION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT update.json
+          git add UPSTREAM_VERSION MODULE_REVISION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT CHANGELOG.md update.json
           if git diff --cached --quiet; then
             echo 'Sync state tidak berubah.'
             exit 0
