@@ -19,7 +19,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
     LOG: '/data/adb/picoclaw/logs/launcher-module.log',
   });
 
-  const logs = ref('Log belum tersedia.');
+  const logs = ref('No logs available.');
   const logLines = ref('80');
   const busy = ref(false);
   const toastMessage = ref('');
@@ -36,7 +36,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
     const cmd = [CONTROL_BIN, ...args].map(shellQuote).join(' ');
     const res = await KSU.exec(cmd);
     if (res.errno !== 0) {
-      throw new Error(res.stderr || res.stdout || `Perintah gagal (${res.errno})`);
+      throw new Error(res.stderr || res.stdout || `Command failed (${res.errno})`);
     }
     return res.stdout.trim();
   }
@@ -59,7 +59,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
         control('logs', logLines.value),
       ]);
       status.value = parseStatusOutput(statusRaw);
-      logs.value = logRaw || 'Log belum tersedia.';
+      logs.value = logRaw || 'No logs available.';
     } catch (err) {
       if (!quiet) errorMessage.value = err.message;
     }
@@ -96,7 +96,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
           output = await control('logs', 'clear');
           break;
         default:
-          throw new Error(`Aksi tidak dikenal: ${action}`);
+          throw new Error(`Unknown action: ${action}`);
       }
       await refresh({ quiet: true });
       if (output) {

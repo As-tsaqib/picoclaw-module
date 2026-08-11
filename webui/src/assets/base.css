@@ -2,69 +2,43 @@
 @import url('https://mui.kernelsu.org/internal/colors.css');
 @import "tailwindcss";
 
-html,
-body,
-#app {
+:root {
+  --c-bg: var(--background, #0e1117);
+  --c-surface: var(--surfaceContainer, #161b22);
+  --c-surface-hi: var(--surfaceContainerHigh, #1c2128);
+  --c-border: var(--outline, #2d333b);
+  --c-text: var(--onSurface, #e6edf3);
+  --c-text-dim: var(--onSurfaceVariant, #7d8590);
+  --c-accent: var(--primary, #58a6ff);
+  --c-accent-dim: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  --c-ok: #3fb950;
+  --c-warn: #d29922;
+  --c-err: #f85149;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+html, body, #app {
   height: 100dvh;
-  overflow: hidden;
   margin: 0;
-  background-color: var(--color-background, #090d16);
-  color: var(--color-on-background, #f0f4fd);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
-@theme {
-  --color-primary: var(--primary, #6366f1);
-  --color-on-primary: var(--onPrimary, #ffffff);
-  --color-primary-container: var(--primaryContainer, #1e1b4b);
-  --color-on-primary-container: var(--onPrimaryContainer, #e0e7ff);
-
-  --color-secondary: var(--secondary, #f43f5e);
-  --color-on-secondary: var(--onSecondary, #ffffff);
-  --color-secondary-container: var(--secondaryContainer, #4c0519);
-  --color-on-secondary-container: var(--onSecondaryContainer, #ffe4e6);
-
-  --color-background: var(--background, #090d16);
-  --color-on-background: var(--onBackground, #f0f4fd);
-  --color-surface: var(--surface, #0f172a);
-  --color-on-surface: var(--onSurface, #f0f4fd);
-  --color-surface-variant: var(--surfaceVariant, #1e293b);
-  --color-on-surface-variant: var(--onSurfaceVariant, #94a3b8);
-
-  --color-surface-container: var(--surfaceContainer, #131c31);
-  --color-surface-container-high: var(--surfaceContainerHigh, #1e293b);
-  --color-surface-container-highest: var(--surfaceContainerHighest, #334155);
-  --color-surface-container-low: var(--surfaceContainerLow, #0d1322);
-  --color-surface-container-lowest: var(--surfaceContainerLowest, #060911);
-
-  --color-outline: var(--outline, #334155);
-  --color-outline-variant: var(--outlineVariant, rgba(255, 255, 255, 0.08));
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-@layer utilities {
-  .scrollbar-hidden::-webkit-scrollbar {
-    display: none;
-  }
-  .scrollbar-hidden {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  .pb-safe-nav {
-    padding-bottom: calc(5.5rem + var(--window-inset-bottom, 0px));
-  }
-  .glass-card {
-    background: rgba(19, 28, 49, 0.75);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  }
-  .glass-card-hover {
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-  }
-  .glass-card-hover:hover {
-    transform: translateY(-2px);
-    border-color: rgba(99, 102, 241, 0.3);
-    box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.15);
-  }
+a, button, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+code {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.85em;
 }

@@ -12,7 +12,7 @@ export function hasKernelSUBridge() {
 export function exec(command, options = {}) {
   return new Promise((resolve, reject) => {
     if (!hasKernelSUBridge()) {
-      reject(new Error("Bridge WebUI KernelSU / APatch tidak tersedia. Buka halaman ini dari Manager."));
+      reject(new Error("KernelSU / APatch WebUI bridge not available. Open this page from the Manager app."));
       return;
     }
 
