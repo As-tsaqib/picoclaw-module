@@ -1,6 +1,6 @@
-# PicoClaw Module v0.3.1-r8
+# PicoClaw Module v0.3.1-r9
 
-Berbasis release upstream [`v0.3.1`](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1), lalu dibangun dari fork kustom [`055b773d161e44b80ee5726ec78f084e7becbb48`](https://github.com/As-tsaqib/picoclaw/commit/055b773d161e44b80ee5726ec78f084e7becbb48).
+Berbasis release upstream [`v0.3.1`](https://github.com/sipeed/picoclaw/releases/tag/v0.3.1), lalu dibangun dari fork kustom [`9a9f399df0abe28fdd74a7ce0afc3a4707abc5c3`](https://github.com/As-tsaqib/picoclaw/commit/9a9f399df0abe28fdd74a7ce0afc3a4707abc5c3).
 
 ## Instalasi
 

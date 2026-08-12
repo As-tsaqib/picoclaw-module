@@ -1,7 +1,7 @@
 {
-  "version": "v0.3.1-r8",
-  "versionCode": 300108,
-  "zipUrl": "https://github.com/As-tsaqib/picoclaw-module/releases/download/v0.3.1-r8/PicoClaw-Module-v0.3.1-r8-arm64.zip",
+  "version": "v0.3.1-r9",
+  "versionCode": 300109,
+  "zipUrl": "https://github.com/As-tsaqib/picoclaw-module/releases/download/v0.3.1-r9/PicoClaw-Module-v0.3.1-r9-arm64.zip",
   "changelog": "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/CHANGELOG.md",
   "banner": "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/banner.png"
 }
