@@ -81,21 +81,6 @@
         </div>
       </div>
 
-      <!-- Info Card -->
-      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl text-on-surface">
-        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
-          <h3 class="text-sm font-medium">Versi Modul</h3>
-          <span class="text-xs text-on-surface-variant font-mono">{{ store.status.VERSION || '—' }}</span>
-        </div>
-        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
-          <h3 class="text-sm font-medium">Upstream Tag</h3>
-          <span class="text-xs text-on-surface-variant font-mono">{{ store.status.UPSTREAM || '—' }}</span>
-        </div>
-        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
-          <h3 class="text-sm font-medium">Log File</h3>
-          <span class="text-[10px] text-on-surface-variant font-mono truncate max-w-[150px]">{{ store.status.LOG || '—' }}</span>
-        </div>
-      </div>
 
       <!-- Logs -->
       <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col h-[50vh] text-on-surface">
