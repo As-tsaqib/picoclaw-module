@@ -98,7 +98,7 @@
       </div>
 
       <!-- Logs -->
-      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col h-64 text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col h-[50vh] text-on-surface">
         <div class="flex justify-between items-center mb-3">
           <h3 class="text-sm font-medium">Service Logs</h3>
           <div class="flex items-center gap-2">
@@ -120,9 +120,8 @@
         />
         <div class="flex-1 overflow-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
           <template v-if="filteredLogLines.length">
-            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed whitespace-nowrap w-max" :class="logLineClass(line)">
-              <span class="opacity-50 select-none mr-2">{{ i + 1 }}</span>
-              {{ line }}
+            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed whitespace-pre w-max flex" :class="logLineClass(line)">
+              <span class="opacity-50 select-none inline-block w-8 shrink-0 text-right mr-3">{{ i + 1 }}</span><span>{{ line }}</span>
             </div>
           </template>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
