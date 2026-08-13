@@ -118,9 +118,9 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-y-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
+        <div class="flex-1 overflow-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
           <template v-if="filteredLogLines.length">
-            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed break-words whitespace-pre-wrap" :class="logLineClass(line)">
+            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed whitespace-nowrap w-max" :class="logLineClass(line)">
               <span class="opacity-50 select-none mr-2">{{ i + 1 }}</span>
               {{ line }}
             </div>
