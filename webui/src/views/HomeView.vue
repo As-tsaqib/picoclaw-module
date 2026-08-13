@@ -106,6 +106,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePicoClawStore } from '@/stores/PicoClawStore';
+import * as KSU from '@/helpers/KernelSU';
 import FilePickerModal from '@/components/ui/FilePickerModal.vue';
 import Ripple from '@/components/ui/Ripple.vue';
 
@@ -141,6 +142,10 @@ async function openDashboard() {
     await new Promise((res) => setTimeout(res, 600));
   }
   const url = await store.control('url');
-  router.push({ name: 'dashboard', query: { url } });
+  try {
+    await KSU.exec(`su -c 'am start -a android.intent.action.VIEW -d "${url}"'`);
+  } catch (err) {
+    window.open(url, '_blank');
+  }
 }
 </script>
