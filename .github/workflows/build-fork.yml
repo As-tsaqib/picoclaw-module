@@ -1,4 +1,4 @@
-name: Sync upstream release
+name: Build fork release
 
 on:
   schedule:
@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sync-upstream-release
+  group: build-fork-release
   cancel-in-progress: false
 
 jobs:
@@ -33,7 +33,6 @@ jobs:
       PICOCLAW_ANDROID_API: "21"
       PICOCLAW_NDK_VERSION: "27.3.13750724"
       PICOCLAW_SOURCE_REPOSITORY: "As-tsaqib/picoclaw"
-      PICOCLAW_SOURCE_REF: "main"
 
     steps:
       - name: Checkout module repository
@@ -41,32 +40,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Discover latest stable upstream release
-        id: upstream
+      - name: Discover fork source
+        id: source
         shell: bash
         env:
           FORCE_BUILD: ${{ inputs.force || false }}
         run: |
           set -Eeuo pipefail
 
-          release_json="$(gh api repos/sipeed/picoclaw/releases/latest)"
-          upstream_tag="$(jq -r '.tag_name' <<< "$release_json")"
-          published_at="$(jq -r '.published_at' <<< "$release_json")"
-
-          if [[ ! $upstream_tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Tag upstream tidak valid: $upstream_tag"
-            exit 1
-          fi
-
-          revision="$(tr -d '[:space:]' < MODULE_REVISION)"
-          desired_version="${upstream_tag}-r${revision}"
-          recorded_upstream="$(tr -d '[:space:]' < UPSTREAM_VERSION)"
+          # The fork is the only build input. The module has its own SemVer.
+          # shellcheck disable=SC1091
+          source scripts/lib.sh
+          module_version="$(tr -d '[:space:]' < MODULE_VERSION)"
+          validate_module_version "$module_version"
+          source_ref="$(tr -d '[:space:]' < SOURCE_REF)"
+          validate_source_ref "$source_ref"
           recorded_module="$(tr -d '[:space:]' < BUILT_MODULE_VERSION)"
+          recorded_ref=""
           recorded_source=""
+          if [[ -f BUILT_SOURCE_REF ]]; then
+            recorded_ref="$(tr -d '[:space:]' < BUILT_SOURCE_REF)"
+            validate_source_ref "$recorded_ref"
+          fi
           if [[ -f BUILT_SOURCE_COMMIT ]]; then
             recorded_source="$(tr -d '[:space:]' < BUILT_SOURCE_COMMIT)"
           fi
-          source_sha="$(gh api "repos/$PICOCLAW_SOURCE_REPOSITORY/commits/$PICOCLAW_SOURCE_REF" --jq '.sha')"
+          source_sha="$(gh api "repos/$PICOCLAW_SOURCE_REPOSITORY/commits/$source_ref" --jq '.sha')"
           [[ $source_sha =~ ^[0-9a-f]{40}$ ]] || {
             echo "::error::Commit source fork tidak valid: $source_sha"
             exit 1
@@ -77,106 +76,113 @@ jobs:
           if [[ $FORCE_BUILD == true ]]; then
             needs_build=true
             reason="manual force rebuild"
-          elif [[ $recorded_upstream != "$upstream_tag" ]]; then
+          elif [[ $recorded_module != "$module_version" ]]; then
             needs_build=true
-            reason="new upstream release"
-          elif [[ $recorded_module != "$desired_version" ]]; then
+            reason="module version changed"
+          elif [[ -z $recorded_ref ]]; then
+            module_version="$(bump_module_patch "$module_version")"
+            printf '%s\n' "$module_version" > MODULE_VERSION
             needs_build=true
-            reason="module revision changed"
+            reason="source ref provenance belum tercatat"
+          elif [[ $recorded_ref != "$source_ref" ]]; then
+            module_version="$(bump_module_patch "$module_version")"
+            printf '%s\n' "$module_version" > MODULE_VERSION
+            needs_build=true
+            reason="source ref changed"
           elif [[ -z $recorded_source ]]; then
             needs_build=true
             reason="source provenance belum tercatat"
           elif [[ $recorded_source != "$source_sha" ]]; then
+            module_version="$(bump_module_patch "$module_version")"
+            printf '%s\n' "$module_version" > MODULE_VERSION
             needs_build=true
             reason="fork source commit updated ($recorded_source -> $source_sha)"
-            revision=$((revision + 1))
-            desired_version="${upstream_tag}-r${revision}"
-            printf '%s\n' "$revision" > MODULE_REVISION
-          elif ! gh release view "$desired_version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          elif ! gh release view "$module_version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             needs_build=true
             reason="release asset is missing"
           fi
 
           {
-            echo "tag=$upstream_tag"
-            echo "published_at=$published_at"
-            echo "desired_version=$desired_version"
+            echo "module_version=$module_version"
             echo "source_repository=$PICOCLAW_SOURCE_REPOSITORY"
-            echo "source_ref=$PICOCLAW_SOURCE_REF"
+            echo "source_ref=$source_ref"
             echo "source_sha=$source_sha"
             echo "needs_build=$needs_build"
             echo "reason=$reason"
           } >> "$GITHUB_OUTPUT"
 
           {
-            echo "### Upstream check"
+            echo "### Fork source check"
             echo
-            echo "- Latest upstream: \`$upstream_tag\`"
-            echo "- Desired module: \`$desired_version\`"
+            echo "- Source: \`$PICOCLAW_SOURCE_REPOSITORY@$source_ref\`"
+            echo "- Source commit: \`$source_sha\`"
+            echo "- Module version: \`$module_version\`"
             echo "- Build: \`$needs_build\` ($reason)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Checkout customized PicoClaw source
-        if: steps.upstream.outputs.needs_build == 'true'
+      - name: Checkout PicoClaw fork source
+        if: steps.source.outputs.needs_build == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: ${{ steps.upstream.outputs.source_repository }}
-          ref: ${{ steps.upstream.outputs.source_sha }}
+          repository: ${{ steps.source.outputs.source_repository }}
+          ref: ${{ steps.source.outputs.source_sha }}
           fetch-depth: 0
-          path: upstream
+          path: picoclaw-source
 
-      - name: Verify customized source includes upstream release
-        if: steps.upstream.outputs.needs_build == 'true'
+      - name: Verify checked out source is the fork
+        if: steps.source.outputs.needs_build == 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
-          git -C upstream remote add canonical https://github.com/sipeed/picoclaw.git
-          git -C upstream fetch --no-tags canonical \
-            "refs/tags/${{ steps.upstream.outputs.tag }}:refs/tags/${{ steps.upstream.outputs.tag }}"
-          source_commit="$(git -C upstream rev-parse HEAD)"
-          upstream_commit="$(git -C upstream rev-parse '${{ steps.upstream.outputs.tag }}^{commit}')"
-          if ! git -C upstream merge-base --is-ancestor "$upstream_commit" "$source_commit"; then
-            echo "::error::Fork $source_commit belum memuat upstream ${{ steps.upstream.outputs.tag }} ($upstream_commit)."
-            echo "::error::Jalankan workflow Sync upstream release pada As-tsaqib/picoclaw terlebih dahulu."
+          source_url="$(git -C picoclaw-source remote get-url origin)"
+          case "${source_url%.git}" in
+            https://github.com/As-tsaqib/picoclaw|git@github.com:As-tsaqib/picoclaw) ;;
+            *)
+              echo "::error::Checkout bukan berasal dari As-tsaqib/picoclaw: $source_url"
+              exit 1
+              ;;
+          esac
+          source_commit="$(git -C picoclaw-source rev-parse HEAD)"
+          if [[ $source_commit != "${{ steps.source.outputs.source_sha }}" ]]; then
+            echo "::error::Commit checkout tidak sesuai dengan commit fork yang ditemukan."
             exit 1
           fi
           {
-            echo "### Customized source"
+            echo "### PicoClaw fork source"
             echo
-            echo "- Repository: \`${{ steps.upstream.outputs.source_repository }}\`"
+            echo "- Repository: \`${{ steps.source.outputs.source_repository }}\`"
             echo "- Commit: \`$source_commit\`"
-            echo "- Upstream base: \`${{ steps.upstream.outputs.tag }}\` (\`$upstream_commit\`)"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Setup Go from upstream go.mod
-        if: steps.upstream.outputs.needs_build == 'true'
+      - name: Setup Go from fork go.mod
+        if: steps.source.outputs.needs_build == 'true'
         id: setup-go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
-          go-version-file: upstream/go.mod
-          cache-dependency-path: upstream/go.sum
+          go-version-file: picoclaw-source/go.mod
+          cache-dependency-path: picoclaw-source/go.sum
 
       - name: Setup pnpm
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 10.33.0
           run_install: false
 
       - name: Setup Node.js
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: upstream/web/frontend/pnpm-lock.yaml
+          cache-dependency-path: picoclaw-source/web/frontend/pnpm-lock.yaml
 
       - name: Install build tools
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         run: sudo apt-get install -y shellcheck zip unzip jq file
 
       - name: Configure pinned Android NDK
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -208,57 +214,63 @@ jobs:
           "$compiler" --version
 
       - name: Validate module sources
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         run: ./scripts/test.sh
 
-      - name: Compile upstream and package module
-        if: steps.upstream.outputs.needs_build == 'true'
+      - name: Validate module WebUI bundle
+        if: steps.source.outputs.needs_build == 'true'
+        run: ./scripts/check-webui.sh
+
+      - name: Compile fork and package module
+        if: steps.source.outputs.needs_build == 'true'
         env:
-          PICOCLAW_SOURCE_REPOSITORY_URL: https://github.com/${{ steps.upstream.outputs.source_repository }}
-          PICOCLAW_SOURCE_COMMIT: ${{ steps.upstream.outputs.source_sha }}
-        run: ./scripts/build-upstream.sh "$GITHUB_WORKSPACE/upstream" "${{ steps.upstream.outputs.tag }}" "$GITHUB_WORKSPACE/dist" "${{ steps.upstream.outputs.source_sha }}"
+          PICOCLAW_SOURCE_REPOSITORY_URL: https://github.com/${{ steps.source.outputs.source_repository }}
+          PICOCLAW_SOURCE_COMMIT: ${{ steps.source.outputs.source_sha }}
+        run: ./scripts/build-fork.sh "$GITHUB_WORKSPACE/picoclaw-source" "${{ steps.source.outputs.source_ref }}" "$GITHUB_WORKSPACE/dist" "${{ steps.source.outputs.source_sha }}"
 
       - name: Read build metadata
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         id: build
         shell: bash
         run: |
           set -Eeuo pipefail
           source dist/metadata.env
-          if [[ $MODULE_VERSION != "${{ steps.upstream.outputs.desired_version }}" ]]; then
+          if [[ $MODULE_VERSION != "${{ steps.source.outputs.module_version }}" ]]; then
             echo "::error::Versi hasil package tidak sesuai: $MODULE_VERSION"
             exit 1
           fi
-          if [[ $SOURCE_COMMIT != "${{ steps.upstream.outputs.source_sha }}" ]]; then
+          if [[ $SOURCE_COMMIT != "${{ steps.source.outputs.source_sha }}" ]]; then
             echo "::error::Commit source hasil build tidak sesuai: $SOURCE_COMMIT"
             exit 1
           fi
           {
-            echo "upstream_tag=$UPSTREAM_TAG"
             echo "module_version=$MODULE_VERSION"
             echo "version_code=$VERSION_CODE"
             echo "asset_name=$ASSET_NAME"
             echo "archive_path=$ARCHIVE_PATH"
             echo "checksum_path=$CHECKSUM_PATH"
             echo "source_commit=$SOURCE_COMMIT"
+            echo "binary_version=$BINARY_VERSION"
           } >> "$GITHUB_OUTPUT"
 
       - name: Prepare release metadata
-        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
+        if: steps.source.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         run: |
           set -Eeuo pipefail
-          gh api "repos/sipeed/picoclaw/releases/tags/${{ steps.upstream.outputs.tag }}" --jq '.body' > dist/upstream-notes.md
+          gh api "repos/${{ steps.source.outputs.source_repository }}/commits/${{ steps.source.outputs.source_sha }}" \
+            --jq '.commit.message' > dist/source-notes.md
           ./scripts/write-release-notes.sh \
-            "${{ steps.upstream.outputs.tag }}" \
+            "${{ steps.source.outputs.source_ref }}" \
             "${{ steps.build.outputs.module_version }}" \
-            dist/upstream-notes.md \
+            dist/source-notes.md \
             dist/release-notes.md \
-            "${{ steps.upstream.outputs.source_repository }}" \
-            "${{ steps.upstream.outputs.source_sha }}"
+            "${{ steps.source.outputs.source_repository }}" \
+            "${{ steps.source.outputs.source_sha }}" \
+            "${{ steps.build.outputs.binary_version }}"
 
       - name: Upload workflow artifact
-        if: steps.upstream.outputs.needs_build == 'true'
+        if: steps.source.outputs.needs_build == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: picoclaw-module-${{ steps.build.outputs.module_version }}
@@ -269,7 +281,7 @@ jobs:
           retention-days: 14
 
       - name: Publish GitHub release
-        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
+        if: steps.source.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         env:
           FORCE_BUILD: ${{ inputs.force || false }}
@@ -309,7 +321,7 @@ jobs:
           fi
 
       - name: Update repository sync state
-        if: steps.upstream.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
+        if: steps.source.outputs.needs_build == 'true' && (github.event_name == 'schedule' || inputs.publish == true)
         shell: bash
         run: |
           set -Eeuo pipefail
@@ -317,7 +329,8 @@ jobs:
           asset_name="${{ steps.build.outputs.asset_name }}"
           release_base="https://github.com/$GITHUB_REPOSITORY/releases"
 
-          printf '%s\n' "${{ steps.upstream.outputs.tag }}" > UPSTREAM_VERSION
+          printf '%s\n' "${{ steps.source.outputs.source_ref }}" > SOURCE_REF
+          printf '%s\n' "${{ steps.source.outputs.source_ref }}" > BUILT_SOURCE_REF
           printf '%s\n' "$module_version" > BUILT_MODULE_VERSION
           printf '%s\n' "${{ steps.build.outputs.source_commit }}" > BUILT_SOURCE_COMMIT
           if [[ -f dist/release-notes.md ]]; then
@@ -333,11 +346,11 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add UPSTREAM_VERSION MODULE_REVISION BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT CHANGELOG.md update.json
+          git add MODULE_VERSION SOURCE_REF BUILT_SOURCE_REF BUILT_MODULE_VERSION BUILT_SOURCE_COMMIT CHANGELOG.md update.json
           if git diff --cached --quiet; then
             echo 'Sync state tidak berubah.'
             exit 0
           fi
-          git commit -m "chore: sync PicoClaw ${{ steps.upstream.outputs.tag }} (${{ steps.build.outputs.source_commit }})"
+          git commit -m "chore: build module $module_version from fork (${{ steps.build.outputs.source_commit }})"
           git pull --rebase origin main
           git push origin HEAD:main

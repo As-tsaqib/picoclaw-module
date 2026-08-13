@@ -14,7 +14,10 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
     URL: 'http://127.0.0.1:18800',
     WRAPPERS: '—',
     VERSION: '—',
-    UPSTREAM: '—',
+    MODULE_VERSION: '—',
+    BINARY_VERSION: '—',
+    SOURCE_REF: '—',
+    SOURCE_COMMIT: '—',
     CONFIG: '/data/adb/picoclaw/config.json',
     LOG: '/data/adb/picoclaw/logs/launcher-module.log',
   });

@@ -417,8 +417,14 @@ show_status() {
   status_port=$(launcher_port)
   status_host=$(launcher_host)
   status_wrappers=$(termux_wrappers_status)
-  status_version=$(sed -n 's/^version=//p' "$MODDIR/module.prop" | head -n 1)
-  status_upstream=$(sed -n 's/^upstreamTag=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
+  status_module_version=$(sed -n 's/^version=//p' "$MODDIR/module.prop" | head -n 1)
+  status_binary_version=$(sed -n 's/^binaryVersion=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
+  if [ -z "$status_binary_version" ]; then
+    # Compatibility with modules built before the independent version format.
+    status_binary_version=$(sed -n 's/^upstreamTag=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
+  fi
+  status_source_ref=$(sed -n 's/^sourceRef=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
+  status_source_commit=$(sed -n 's/^sourceCommit=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
 
   printf 'RUNNING=%s\n' "$status_running"
   printf 'PID=%s\n' "$status_pid"
@@ -427,8 +433,12 @@ show_status() {
   printf 'PORT=%s\n' "$status_port"
   printf 'URL=http://127.0.0.1:%s\n' "$status_port"
   printf 'WRAPPERS=%s\n' "$status_wrappers"
-  printf 'VERSION=%s\n' "$status_version"
-  printf 'UPSTREAM=%s\n' "$status_upstream"
+  # VERSION is retained for older WebUI clients; new clients use the explicit fields.
+  printf 'VERSION=%s\n' "$status_module_version"
+  printf 'MODULE_VERSION=%s\n' "$status_module_version"
+  printf 'BINARY_VERSION=%s\n' "$status_binary_version"
+  printf 'SOURCE_REF=%s\n' "$status_source_ref"
+  printf 'SOURCE_COMMIT=%s\n' "$status_source_commit"
   printf 'CONFIG=%s\n' "$PICO_CONFIG"
   printf 'LOG=%s\n' "$PICO_LOG"
 }

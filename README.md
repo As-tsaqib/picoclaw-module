@@ -1,30 +1,32 @@
 # PicoClaw Module
 
-Modul root Android ARM64 untuk [PicoClaw](https://github.com/sipeed/picoclaw),
-ditujukan terutama untuk **KernelSU Next** dan tetap mengikuti format modul
-Magisk/KSU yang umum. Binary CLI dan launcher web dibangun dari fork kustom
-`As-tsaqib/picoclaw` yang memuat release stabil upstream terbaru serta
-perubahan integrasi Telegram.
+Modul root Android ARM64 untuk PicoClaw, ditujukan terutama untuk **KernelSU
+Next** dan tetap mengikuti format modul Magisk/KSU yang umum. Binary CLI dan
+launcher web selalu dibangun dari repository fork resmi modul ini:
+[`As-tsaqib/picoclaw`](https://github.com/As-tsaqib/picoclaw). Checkout atau
+release dari repository lain tidak diperlukan.
 
 ## Fitur
 
-- Build terikat pada commit fork yang dapat diaudit dan diverifikasi memuat
-  commit tag release resmi `sipeed/picoclaw`.
-- Metadata `build-info.prop` di dalam ZIP mencatat tag upstream, commit
-  upstream, commit fork, dan repository source kustom.
-- Pemeriksaan upstream otomatis sekali sehari pada pukul **00:00 UTC**
+- Build selalu terikat pada commit fork yang dapat diaudit. Script packing
+  menolak source tree yang tidak memiliki remote `As-tsaqib/picoclaw`.
+- Metadata `build-info.prop` di dalam ZIP mencatat repository, ref, commit,
+  versi binary, dan versi module secara terpisah.
+- Pemeriksaan commit fork otomatis sekali sehari pada pukul **00:00 UTC**
   (08:00 WITA), sesuai jadwal workflow release.
-- Release ZIP modul dibuat otomatis hanya ketika versi upstream atau revisi
-  modul berubah.
+- Versi module mengikuti SemVer independen dan dimulai dari **1.0.0**. Versi
+  binary PicoClaw tidak digunakan sebagai versi module.
+- Release ZIP modul dibuat otomatis ketika commit fork atau versi module
+  berubah.
 - `picoclaw` dan `picoclaw-launcher` Android ARM64 dibangun dari source,
   termasuk frontend dashboard resmi yang di-embed ke launcher.
 - Pada Android, binary memakai resolver Go dengan fallback DNS ketika
   `/etc/resolv.conf` tidak tersedia. Server DNS dapat diatur melalui
   `PICOCLAW_DNS_SERVER` (format `host:port;host:port`); tanpa pengaturan ini
-  upstream memakai fallback publik `8.8.8.8:53;1.1.1.1:53`.
+  build Android memakai fallback publik `8.8.8.8:53;1.1.1.1:53`.
 - Patch kompatibilitas yang dilacak di repo mempertahankan mode launcher
   headless Android ketika cgo aktif; patch dilewati otomatis apabila struktur
-  upstream sudah berubah.
+  source fork sudah berubah.
 - WebUI KSU Next untuk start/stop/restart launcher, autostart, status, log, dan
   pemasangan ulang wrapper Termux.
 - Launcher web berjalan otomatis di `http://127.0.0.1:18800` dan tidak diekspos
@@ -79,10 +81,10 @@ picoclaw-web -port 18801
 
 Alias `picoclaw-<subcommand>` sama dengan `picoclaw <subcommand>`. Perintah
 `picoclaw-web` menjalankan launcher dalam mode console/no-browser, sedangkan
-`picoclaw-launcher` mempertahankan perilaku launcher upstream.
+`picoclaw-launcher` mempertahankan perilaku launcher PicoClaw.
 
 Gunakan update modul dari KSU Next untuk memperbarui instalasi. Perintah
-upstream `picoclaw update` hanya memperbarui satu binary dan tidak memperbarui
+Perintah `picoclaw update` hanya memperbarui satu binary dan tidak memperbarui
 launcher maupun metadata modul, sehingga tidak disarankan untuk instalasi ini.
 
 ## Lokasi penting
@@ -108,51 +110,55 @@ Data persisten sengaja tidak dihapus ketika modul di-uninstall. Hapus manual
 `/data/adb/picoclaw` hanya jika Anda memang ingin menghapus config, credential,
 workspace, dan log.
 
-## Otomasi release
+## Versi dan otomasi release
 
-Workflow `Sync upstream release` melakukan alur berikut:
+Workflow `Build fork release` hanya mengambil commit dari
+`As-tsaqib/picoclaw` branch `main`, lalu melakukan alur berikut:
 
-1. meminta release stabil terbaru dari GitHub API;
-2. membandingkannya dengan `UPSTREAM_VERSION`, revisi modul, dan commit fork;
-3. checkout commit fork kustom dan memverifikasi tag upstream merupakan
-   ancestor-nya;
-4. memakai versi Go dari `go.mod`, menerapkan patch kompatibilitas Android yang
-   diperlukan, membangun frontend dengan lockfile pnpm, lalu menjalankan target
-   Android resmi upstream;
-5. memvalidasi kedua ELF ARM64, merakit ZIP modul, dan membuat checksum;
-6. menerbitkan GitHub Release serta memperbarui `update.json`.
+1. mengambil SHA commit fork melalui GitHub API;
+2. membandingkannya dengan `BUILT_SOURCE_REF`, `BUILT_SOURCE_COMMIT`, dan
+   `MODULE_VERSION`;
+3. checkout SHA fork yang sama dan memverifikasi remote repository;
+4. memakai versi Go dari `go.mod` fork, menerapkan patch kompatibilitas Android
+   bila diperlukan, membangun frontend dengan lockfile pnpm, lalu menjalankan
+   target Android PicoClaw;
+5. memvalidasi kedua ELF ARM64, merakit ZIP module, dan membuat checksum;
+6. menerbitkan GitHub Release dengan tag versi module serta memperbarui
+   `update.json`.
 
-Workflow pada fork PicoClaw (`As-tsaqib/picoclaw`) berjalan lebih dahulu setiap
-hari untuk menggabungkan release stabil terbaru dari `sipeed/picoclaw` ke branch
-kustom. Jika terjadi konflik, workflow berhenti agar perubahan tidak dibangun
-secara diam-diam. Workflow module memeriksa source fork pada jadwalnya sendiri
-dan memverifikasi commit tersebut sebelum build.
+`MODULE_VERSION` adalah source-of-truth versi module dan saat ini bernilai
+`1.0.0`. Naikkan patch/minor/major file tersebut ketika kode module atau
+kompatibilitas paket berubah. Jika commit fork berubah setelah release module
+tersedia, workflow menaikkan patch module secara otomatis. `SOURCE_REF`
+mencatat ref fork yang digunakan untuk build.
 
-Workflow juga dapat dijalankan manual dari tab Actions. Naikkan angka dalam
-`MODULE_REVISION` bila kode modul berubah dan release untuk versi upstream yang
-sama perlu dibuat ulang.
+Workflow juga dapat dijalankan manual dari tab Actions. Mode `force` membangun
+ulang dengan versi module yang sedang aktif.
 
 ## Build lokal
 
-Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, npm/pnpm, `make`, `zip`,
+Dependensi: Bash, Go sesuai `picoclaw-source/go.mod`, Node.js, npm/pnpm, `make`, `zip`,
 `file`, serta compiler ARM64 dari Android NDK. Di Termux compiler
 `aarch64-linux-android-clang` dideteksi otomatis. Pada host Linux lain, arahkan
 `PICOCLAW_ANDROID_CC` ke compiler NDK dan pilih API minimum dengan
 `PICOCLAW_ANDROID_API` (default 21).
 
 ```sh
-git clone https://github.com/As-tsaqib/picoclaw.git upstream
-git -C upstream checkout main
+git clone --branch main --single-branch https://github.com/As-tsaqib/picoclaw.git picoclaw-source
 PICOCLAW_ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" \
-  make build SOURCE_DIR="$PWD/upstream" UPSTREAM_TAG=v0.3.1
+  make build SOURCE_DIR="$PWD/picoclaw-source" SOURCE_REF=main
 ```
 
 Artefak berada di `dist/`. Jalankan `make test` untuk pemeriksaan statis,
 tes perakitan ZIP, dan regression test backup/restore. Jalankan
 `make webui-check` untuk membangun frontend dari `webui/package-lock.json` dan
-memastikan `module/webroot/` sinkron. Build upstream menggunakan Git worktree
+ memastikan `module/webroot/` sinkron. Build fork menggunakan Git worktree
 sementara sehingga source checkout tetap bersih setelah patch Android dan
 kompilasi selesai.
+
+Di WebUI, **Module Version** adalah versi paket KSU/Magisk, sedangkan
+**Binary Version** adalah nilai `VERSION` yang ditanamkan ke binary PicoClaw
+saat build. Keduanya sengaja ditampilkan terpisah.
 
 ## Lisensi
 

@@ -7,16 +7,17 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
 SOURCE_DIR=${1:-}
-UPSTREAM_TAG_INPUT=${2:-}
+SOURCE_REF_INPUT=${2:-main}
 OUTPUT_DIR=${3:-"$REPO_DIR/dist"}
 SOURCE_COMMIT_INPUT=${4:-${PICOCLAW_SOURCE_COMMIT:-}}
 
-[[ -n $SOURCE_DIR && -n $UPSTREAM_TAG_INPUT ]] || {
-  printf 'Usage: %s SOURCE_DIR UPSTREAM_TAG [OUTPUT_DIR] [SOURCE_COMMIT]\n' "$0" >&2
+[[ -n $SOURCE_DIR ]] || {
+  printf 'Usage: %s SOURCE_DIR [SOURCE_REF] [OUTPUT_DIR] [SOURCE_COMMIT]\n' "$0" >&2
   exit 2
 }
 
-load_release_metadata "$UPSTREAM_TAG_INPUT"
+load_module_metadata
+validate_source_ref "$SOURCE_REF_INPUT"
 SOURCE_DIR="$(cd -- "$SOURCE_DIR" && pwd)"
 
 require_command git
@@ -27,21 +28,30 @@ require_command pnpm
 require_command zip
 require_command file
 
-[[ -f $SOURCE_DIR/go.mod ]] || die "go.mod upstream tidak ditemukan di $SOURCE_DIR"
+[[ -f $SOURCE_DIR/go.mod ]] || die "go.mod PicoClaw tidak ditemukan di $SOURCE_DIR"
 grep -qx 'module github.com/sipeed/picoclaw' "$SOURCE_DIR/go.mod" ||
-  die "SOURCE_DIR bukan source tree PicoClaw"
+  die "SOURCE_DIR bukan source tree PicoClaw fork"
+
+source_repository_url="${PICOCLAW_SOURCE_REPOSITORY_URL:-$PICOCLAW_FORK_URL}"
+validate_source_repository_url "$source_repository_url"
+source_repository_url=$PICOCLAW_FORK_URL
+require_fork_source_tree "$SOURCE_DIR"
 
 if [[ -n $(git -C "$SOURCE_DIR" status --porcelain) ]]; then
   die "SOURCE_DIR harus bersih sebelum build"
 fi
 
 head_commit="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
-tag_commit="$(git -C "$SOURCE_DIR" rev-parse "${UPSTREAM_TAG}^{commit}")"
 if [[ -n $SOURCE_COMMIT_INPUT && $head_commit != "$SOURCE_COMMIT_INPUT" ]]; then
   die "HEAD source ($head_commit) tidak sesuai commit yang diminta ($SOURCE_COMMIT_INPUT)"
 fi
-git -C "$SOURCE_DIR" merge-base --is-ancestor "$tag_commit" "$head_commit" ||
-  die "HEAD source ($head_commit) belum memuat commit upstream $UPSTREAM_TAG ($tag_commit)"
+
+binary_version="${PICOCLAW_BINARY_VERSION:-}"
+if [[ -z $binary_version ]]; then
+  binary_version="$(git -C "$SOURCE_DIR" describe --tags --always --dirty 2>/dev/null || true)"
+fi
+[[ -n $binary_version && $binary_version != *[[:space:]]* ]] ||
+  die "versi binary tidak dapat ditentukan dari source fork"
 
 BUILD_PARENT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/picoclaw-build.XXXXXX")"
 BUILD_SOURCE_DIR="$BUILD_PARENT_DIR/source"
@@ -56,9 +66,7 @@ trap cleanup_build_worktree EXIT
 
 git -C "$SOURCE_DIR" worktree add --detach "$BUILD_SOURCE_DIR" "$head_commit" >/dev/null ||
   die "tidak dapat membuat worktree build sementara"
-printf 'Building from disposable worktree %s; source tree asli tidak diubah.\n' "$BUILD_SOURCE_DIR"
-
-source_repository="${PICOCLAW_SOURCE_REPOSITORY_URL:-https://github.com/As-tsaqib/picoclaw}"
+printf 'Building from disposable worktree %s; fork source tree asli tidak diubah.\n' "$BUILD_SOURCE_DIR"
 
 android_systray_stub="$BUILD_SOURCE_DIR/web/backend/systray_stub_nocgo.go"
 android_systray_patch="$REPO_DIR/patches/android-cgo-systray.patch"
@@ -70,14 +78,14 @@ if [[ -f $android_systray_stub ]] &&
   [[ -f $android_systray_patch ]] ||
     die "patch kompatibilitas launcher tidak ditemukan: $android_systray_patch"
   git -C "$BUILD_SOURCE_DIR" apply --unidiff-zero --check "$android_systray_patch" ||
-    die "patch kompatibilitas launcher tidak dapat diterapkan ke $UPSTREAM_TAG"
+    die "patch kompatibilitas launcher tidak dapat diterapkan ke source ref $SOURCE_REF_INPUT"
   git -C "$BUILD_SOURCE_DIR" apply --unidiff-zero "$android_systray_patch"
   printf 'Applied Android cgo system-tray compatibility patch.\n'
 elif [[ -f $android_systray_stub ]] &&
   grep -Fqx "$patched_systray_constraint" "$android_systray_stub"; then
   printf 'Android cgo system-tray compatibility patch is already present.\n'
 else
-  printf 'Upstream system-tray layout changed; compatibility patch not required or no longer applicable.\n'
+  printf 'Fork system-tray layout changed; compatibility patch not required or no longer applicable.\n'
 fi
 
 android_api=${PICOCLAW_ANDROID_API:-21}
@@ -107,12 +115,13 @@ android_target="$($android_cc_path -dumpmachine)"
 [[ $android_target == aarch64*android* ]] ||
   die "target compiler bukan Android ARM64: $android_target"
 
-printf 'Building PicoClaw %s for android/arm64...\n' "$UPSTREAM_TAG"
+printf 'Building PicoClaw source %s (%s) for android/arm64...\n' "$SOURCE_REF_INPUT" "$head_commit"
 printf 'Using cgo compiler %s (%s).\n' "$android_cc_path" "$android_target"
 CGO_ENABLED=1 CC="$android_cc_path" \
-  make -C "$BUILD_SOURCE_DIR" VERSION="$MODULE_VERSION" build-android-bundle
+  make -C "$BUILD_SOURCE_DIR" VERSION="$binary_version" build-android-bundle
 
-PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository" \
+PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository_url" \
+PICOCLAW_SOURCE_REF="$SOURCE_REF_INPUT" \
 PICOCLAW_SOURCE_COMMIT="$head_commit" \
-PICOCLAW_UPSTREAM_COMMIT="$tag_commit" \
-  bash "$SCRIPT_DIR/package-module.sh" "$BUILD_SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"
+PICOCLAW_BINARY_VERSION="$binary_version" \
+  bash "$SCRIPT_DIR/package-module.sh" "$BUILD_SOURCE_DIR" "$SOURCE_REF_INPUT" "$OUTPUT_DIR" "$head_commit" "$binary_version"

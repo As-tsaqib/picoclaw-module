@@ -52,7 +52,11 @@
     <section class="info-grid">
       <div class="info-cell">
         <span class="info-label">Module Version</span>
-        <span class="info-value">{{ store.status.VERSION || '—' }}</span>
+        <span class="info-value">{{ store.status.MODULE_VERSION || store.status.VERSION || '—' }}</span>
+      </div>
+      <div class="info-cell">
+        <span class="info-label">Binary Version</span>
+        <span class="info-value">{{ store.status.BINARY_VERSION || '—' }}</span>
       </div>
       <div class="info-cell info-cell-action">
         <span class="info-label">Termux Wrappers</span>

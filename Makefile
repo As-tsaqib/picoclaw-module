@@ -2,6 +2,8 @@ SHELL := bash
 
 .PHONY: test webui-check package build clean
 
+SOURCE_REF ?= main
+
 test:
 	bash ./scripts/test.sh
 
@@ -10,13 +12,11 @@ webui-check:
 
 package:
 	@test -n "$(SOURCE_DIR)" || (echo "SOURCE_DIR wajib diisi" >&2; exit 2)
-	@test -n "$(UPSTREAM_TAG)" || (echo "UPSTREAM_TAG wajib diisi" >&2; exit 2)
-	bash ./scripts/package-module.sh "$(SOURCE_DIR)" "$(UPSTREAM_TAG)" dist
+	bash ./scripts/package-module.sh "$(SOURCE_DIR)" "$(SOURCE_REF)" dist
 
 build:
 	@test -n "$(SOURCE_DIR)" || (echo "SOURCE_DIR wajib diisi" >&2; exit 2)
-	@test -n "$(UPSTREAM_TAG)" || (echo "UPSTREAM_TAG wajib diisi" >&2; exit 2)
-	bash ./scripts/build-upstream.sh "$(SOURCE_DIR)" "$(UPSTREAM_TAG)" dist
+	bash ./scripts/build-fork.sh "$(SOURCE_DIR)" "$(SOURCE_REF)" dist
 
 clean:
 	rm -rf -- dist

@@ -16,7 +16,18 @@ WEBUI_DIR="$REPO_DIR/webui"
   exit 1
 }
 
-OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/picoclaw-webui.XXXXXX")"
+TEMP_ROOT=${TMPDIR:-}
+if [[ -z $TEMP_ROOT ]]; then
+  TEMP_ROOT="$REPO_DIR/.cache"
+elif [[ $TEMP_ROOT != /* ]]; then
+  TEMP_ROOT="$PWD/$TEMP_ROOT"
+fi
+if ! mkdir -p -- "$TEMP_ROOT" || [[ ! -w $TEMP_ROOT ]]; then
+  TEMP_ROOT="$REPO_DIR/.cache"
+  mkdir -p -- "$TEMP_ROOT"
+fi
+OUTPUT_DIR="$(mktemp -d "$TEMP_ROOT/picoclaw-webui.XXXXXX")"
+OUTPUT_DIR="$(cd -- "$OUTPUT_DIR" && pwd -P)"
 cleanup() {
   rm -rf -- "$OUTPUT_DIR"
 }
