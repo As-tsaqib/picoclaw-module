@@ -165,6 +165,19 @@ textarea:focus-visible {
   transform: scale(.72);
 }
 
+/* Keep the log card compact while allowing long output to scroll inside it. */
+.service-logs-card {
+  height: clamp(18rem, 42dvh, 32rem);
+  max-height: calc(100dvh - 4rem);
+}
+
+@media (max-width: 767px) {
+  .service-logs-card {
+    height: clamp(16rem, 38dvh, 28rem);
+    max-height: calc(100dvh - 3rem);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   button,
   a,

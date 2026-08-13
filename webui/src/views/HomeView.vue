@@ -45,7 +45,8 @@
 
       <!-- Backup & Restore -->
       <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl text-on-surface">
-        <h3 class="text-sm font-medium mb-3">Manajemen Konfigurasi</h3>
+        <h3 class="text-sm font-medium text-center mb-3">Manajemen Konfigurasi</h3>
+        <div class="border-t border-outline-variant/40 mb-3" role="separator" aria-hidden="true"></div>
         <div class="grid grid-cols-2 gap-3">
           <Ripple
             @click="openBackupPicker"
@@ -72,8 +73,8 @@
 
 
       <!-- Logs -->
-      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col h-[50vh] text-on-surface">
-        <div class="flex justify-between items-center mb-3">
+      <div class="service-logs-card bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col overflow-hidden text-on-surface">
+        <div class="flex flex-wrap gap-2 justify-between items-center mb-3">
           <h3 class="text-sm font-medium">Service Logs</h3>
           <div class="flex items-center gap-2">
             <select v-model="store.logLines" @change="store.refresh()" class="bg-surface-container-high border-none text-xs rounded-md px-2 py-1 outline-none text-on-surface">
@@ -92,7 +93,7 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
+        <div class="flex-1 min-h-0 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
           <pre v-if="filteredLogText" class="p-3 m-0" style="white-space: pre; overflow: visible; line-height: 1.2; letter-spacing: 0; font-size: 11px; font-family: 'DejaVu Sans Mono', monospace; width: max-content; min-width: 100%; tab-size: 8;">{{ filteredLogText }}</pre>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
