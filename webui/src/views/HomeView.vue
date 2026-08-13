@@ -118,19 +118,9 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4] font-mono text-[11px] leading-[1.15]" ref="logContainer">
-          <div class="p-3 w-max min-w-full">
-            <template v-if="filteredLogLines.length">
-              <div
-                v-for="(line, i) in filteredLogLines"
-                :key="i"
-                class="whitespace-pre"
-                style="font-family: 'Roboto Mono', 'Droid Sans Mono', monospace;"
-                :class="logLineClass(line)"
-              >{{ line }}</div>
-            </template>
-            <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
-          </div>
+        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4] font-mono text-[10px]" ref="logContainer">
+          <pre v-if="filteredLogText" class="p-3 whitespace-pre m-0" style="line-height: 1.15; letter-spacing: 0; font-family: 'Roboto Mono', 'Droid Sans Mono', monospace;">{{ filteredLogText }}</pre>
+          <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
       </div>
 
@@ -197,22 +187,16 @@ async function openDashboard() {
 const logSearch = ref('');
 const logContainer = ref(null);
 
-const filteredLogLines = computed(() => {
-  if (!store.logs) return [];
-  // Strip ANSI escape codes first
-  const cleanLogs = store.logs.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
-  const lines = cleanLogs.split('\n').map((l) => l.trim()).filter(Boolean);
-  if (!logSearch.value.trim()) return lines;
+const filteredLogText = computed(() => {
+  if (!store.logs) return '';
+  // Strip ANSI escape codes and carriage returns
+  const cleanLogs = store.logs.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\r/g, '');
+  if (!logSearch.value.trim()) return cleanLogs.trim();
+  
   const q = logSearch.value.toLowerCase();
-  return lines.filter((l) => l.toLowerCase().includes(q));
+  const lines = cleanLogs.split('\n');
+  return lines.filter((l) => l.toLowerCase().includes(q)).join('\n').trim();
 });
-
-function logLineClass(line) {
-  if (line.includes('ERR') || line.includes('error') || line.includes('gagal')) return 'text-error';
-  if (line.includes('WRN') || line.includes('Warning')) return 'text-warning'; // Fallback to orange/yellow if exists, else text-on-surface
-  if (line.includes('aktif') || line.includes('RUNNING') || line.includes('PID')) return 'text-primary';
-  return 'text-on-surface-variant';
-}
 
 function scrollLogBottom() {
   nextTick(() => {
