@@ -117,3 +117,68 @@ body,
   --color-surface-container-low: var(--surfaceContainerLow, #23191cff);
   --color-surface-container-lowest: var(--surfaceContainerLowest, #18090fff);
 }
+
+/* Shared press feedback for native buttons and controls outside <Ripple>. */
+button,
+a,
+select,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button,
+a,
+[role='button'] {
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1),
+    background-color 180ms cubic-bezier(.2, .8, .2, 1),
+    border-color 180ms cubic-bezier(.2, .8, .2, 1),
+    color 180ms cubic-bezier(.2, .8, .2, 1),
+    box-shadow 180ms cubic-bezier(.2, .8, .2, 1),
+    opacity 180ms cubic-bezier(.2, .8, .2, 1);
+  will-change: transform;
+}
+
+button:not(:disabled):active,
+a:active,
+[role='button']:active {
+  transform: scale(.975);
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary, #ffb0ccff);
+  outline-offset: 2px;
+}
+
+.status-icon-enter-active,
+.status-icon-leave-active {
+  transition: opacity 160ms ease, transform 220ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.status-icon-enter-from,
+.status-icon-leave-to {
+  opacity: 0;
+  transform: scale(.72);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  a,
+  [role='button'],
+  .ripple-wrapper,
+  .status-icon-enter-active,
+  .status-icon-leave-active {
+    transition-duration: 1ms !important;
+  }
+
+  button:not(:disabled):active,
+  a:active,
+  [role='button']:active,
+  .ripple-wrapper:active {
+    transform: none;
+  }
+}

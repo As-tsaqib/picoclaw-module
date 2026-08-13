@@ -15,6 +15,7 @@
           <ToggleSwitch
             :model-value="store.isAutostart"
             :disabled="store.busy"
+            label="Jalankan saat boot"
             @update:model-value="toggleAutostart"
             class="shrink-0"
           />

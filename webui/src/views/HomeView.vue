@@ -12,10 +12,12 @@
             { 'opacity-50 pointer-events-none': store.busy }
           ]"
         >
-          <!-- Play icon (saat berhenti) -->
-          <svg v-if="!store.isRunning" class="w-6 h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
-          <!-- Stop icon (saat aktif) -->
-          <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="12" height="14" rx="1"></rect></svg>
+          <Transition name="status-icon" mode="out-in">
+            <!-- Play icon (saat berhenti) -->
+            <svg v-if="!store.isRunning" key="play" class="w-6 h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+            <!-- Stop icon (saat aktif) -->
+            <svg v-else key="stop" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="12" height="14" rx="1"></rect></svg>
+          </Transition>
         </Ripple>
         <div class="flex-1 flex flex-col">
           <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>

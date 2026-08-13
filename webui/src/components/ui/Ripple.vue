@@ -5,6 +5,8 @@
     @pointerdown="handlePointerDown"
     @keydown="handleKeydown"
     :tabindex="tabindex"
+    role="button"
+    :aria-disabled="tabindex === -1 ? 'true' : undefined"
     :class="{ 'non-touch': !isTouchDevice }"
     :style="hoverStyle"
   >
@@ -13,7 +15,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 const props = defineProps({
   tabindex: {
@@ -56,12 +58,18 @@ function updateHoverColor() {
 }
 
 function handlePointerDown(event) {
+  if (event.button !== 0 || !container.value) return
   const element = container.value
   const rect = element.getBoundingClientRect()
+  if (!rect.width || !rect.height) return
   const size = Math.max(rect.width, rect.height)
   const x = event.clientX - rect.left - size / 2
   const y = event.clientY - rect.top - size / 2
-  const duration = Math.min(0.8, Math.max(0.2, 0.2 + (rect.width / 800) * 0.3))
+  const duration = Math.min(0.52, Math.max(0.24, 0.24 + (rect.width / 800) * 0.2))
+
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    try { navigator.vibrate(8) } catch {}
+  }
 
   const ripple = document.createElement('span')
   ripple.className = 'ripple'
@@ -71,15 +79,17 @@ function handlePointerDown(event) {
     left: ${x}px;
     top: ${y}px;
     animation-duration: ${duration}s;
-    transition: opacity ${duration}s ease;
+    transition: opacity ${Math.min(0.24, duration * 0.55)}s ease;
     background-color: ${getRippleColor(element)};
   `
 
   element.appendChild(ripple)
+  requestAnimationFrame(() => ripple.classList.add('is-live'))
 
   const cleanup = () => {
+    if (!ripple.isConnected) return
     ripple.classList.add('end')
-    setTimeout(() => ripple.remove(), duration * 1000)
+    setTimeout(() => ripple.remove(), Math.min(260, duration * 1000))
     document.removeEventListener('pointerup', cleanup)
     document.removeEventListener('pointercancel', cleanup)
     element.removeEventListener('pointerleave', cleanup)
@@ -91,11 +101,16 @@ function handlePointerDown(event) {
 }
 
 function handleKeydown(event) {
-  if (event.key === 'Enter' || event.key === ' ') {
+  if (!event.repeat && (event.key === 'Enter' || event.key === ' ')) {
     event.preventDefault()
     container.value.click()
   }
 }
+
+onBeforeUnmount(() => {
+  if (!container.value) return
+  container.value.querySelectorAll('.ripple').forEach((ripple) => ripple.remove())
+})
 
 function getRippleColor(el) {
   if (props.color) return props.color
@@ -172,7 +187,16 @@ function isDarkColor(colorStr) {
   position: relative;
   overflow: hidden;
   outline: none;
-  transition: background-color 0.2s ease;
+  isolation: isolate;
+  transition: background-color 0.18s cubic-bezier(.2, .8, .2, 1),
+    box-shadow 0.18s cubic-bezier(.2, .8, .2, 1),
+    transform 0.16s cubic-bezier(.2, .8, .2, 1);
+  touch-action: manipulation;
+  will-change: transform;
+}
+
+.ripple-wrapper:active {
+  transform: scale(.985);
 }
 
 .ripple-wrapper:focus-visible {
@@ -208,10 +232,15 @@ function isDarkColor(colorStr) {
   position: absolute;
   border-radius: 50%;
   transform: scale(0);
-  opacity: 0.6;
+  opacity: 0;
   animation: ripple-animation ease-out forwards;
   pointer-events: none;
-  animation-duration: 0.6s;
+  z-index: 0;
+  will-change: transform, opacity;
+}
+
+.ripple.is-live {
+  opacity: .42;
 }
 
 .ripple.end {
@@ -220,7 +249,7 @@ function isDarkColor(colorStr) {
 
 @keyframes ripple-animation {
   to {
-    transform: scale(3);
+    transform: scale(2.4);
   }
 }
 
