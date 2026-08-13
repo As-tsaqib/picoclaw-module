@@ -12,7 +12,7 @@ die() {
 
 PICOCLAW_FORK_REPOSITORY='As-tsaqib/picoclaw'
 PICOCLAW_FORK_URL='https://github.com/As-tsaqib/picoclaw'
-PICOCLAW_FORK_MODULE_PATH='github.com/As-tsaqib/picoclaw'
+export PICOCLAW_FORK_MODULE_PATH='github.com/As-tsaqib/picoclaw'
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "command '$1' tidak ditemukan"

@@ -48,7 +48,7 @@ TEST_BUILT_SOURCE_REF="$(tr -d '[:space:]' < "$REPO_DIR/BUILT_SOURCE_REF")"
 validate_source_ref "$TEST_BUILT_SOURCE_REF"
 grep -Fq "PICOCLAW_FORK_URL='https://github.com/As-tsaqib/picoclaw'" \
   "$REPO_DIR/scripts/lib.sh"
-grep -Fq "PICOCLAW_FORK_MODULE_PATH='github.com/As-tsaqib/picoclaw'" \
+grep -Fq "export PICOCLAW_FORK_MODULE_PATH='github.com/As-tsaqib/picoclaw'" \
   "$REPO_DIR/scripts/lib.sh"
 # The expression below is a literal workflow-source assertion.
 # shellcheck disable=SC2016
