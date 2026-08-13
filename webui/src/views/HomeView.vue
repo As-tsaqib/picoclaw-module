@@ -1,176 +1,105 @@
 <template>
-  <div class="space-y-4">
-    <!-- Hero Status Card -->
-    <div class="glass-card relative overflow-hidden rounded-3xl p-5 border border-white/10 bg-gradient-to-br from-indigo-950/40 via-surface-container to-surface-container-high">
-      <div class="relative z-10 flex items-start justify-between">
-        <div class="flex items-center gap-3.5">
-          <!-- Animated Status Ring -->
-          <div class="relative flex items-center justify-center">
-            <span
-              v-if="store.isRunning"
-              class="animate-ping absolute inline-flex h-7 w-7 rounded-full bg-emerald-400 opacity-75"
-            ></span>
-            <div
-              class="relative w-4 h-4 rounded-full transition-all duration-300"
-              :class="store.isRunning ? 'bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.9)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]'"
-            ></div>
+  <div class="scrollbar-hidden pb-safe-nav flex-1 min-h-0 overflow-y-scroll h-full">
+    <div class="max-w-3xl mx-auto p-5 py-1">
+      
+      <!-- Daemon Status -->
+      <div class="bg-secondary-container mb-4 p-4 rounded-xl flex flex-col justify-between text-on-secondary-container">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" :class="store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'">
+            <span class="text-2xl">{{ store.isRunning ? '🚀' : '⏸' }}</span>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h2 class="text-lg font-black tracking-tight text-on-surface">
-                {{ store.isRunning ? 'Launcher Service Aktif' : 'Launcher Service Berhenti' }}
-              </h2>
-            </div>
-            <p class="text-xs text-on-surface-variant mt-0.5 font-medium">
-              {{ store.isRunning ? `PID ${store.status.PID} · http://127.0.0.1:${store.status.PORT}` : 'Tekan Start untuk menjalankan dashboard web' }}
-            </p>
+          <div class="flex-1 flex flex-col">
+            <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>
+            <span class="text-xs pt-1 block opacity-80">{{ store.isRunning ? `PID ${store.status.PID} · Port ${store.status.PORT}` : 'Layanan tidak berjalan.' }}</span>
           </div>
         </div>
-
-        <span
-          class="text-[0.65rem] font-black uppercase tracking-wider px-3 py-1 rounded-full border backdrop-blur-md"
-          :class="store.isRunning ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40' : 'bg-rose-950/80 text-rose-300 border-rose-500/40'"
-        >
-          {{ store.isRunning ? 'RUNNING' : 'STOPPED' }}
-        </span>
-      </div>
-
-      <!-- Hero Action Area -->
-      <div class="relative z-10 mt-5 space-y-2.5">
-        <!-- Main Open Dashboard Button -->
-        <Ripple
-          class="w-full bg-gradient-to-r from-primary via-indigo-500 to-secondary text-on-primary font-black text-sm py-3 px-5 rounded-2xl text-center cursor-pointer shadow-[0_4px_25px_rgba(99,102,241,0.35)] hover:shadow-[0_4px_35px_rgba(99,102,241,0.55)] active:scale-98 transition-all flex items-center justify-center gap-2"
-          @click="openDashboard"
-        >
-          <span>🚀 Buka Dashboard Web</span>
-          <span class="text-xs opacity-80">↗</span>
-        </Ripple>
-
-        <!-- Secondary Control Buttons Grid -->
-        <div class="grid grid-cols-3 gap-2">
+        
+        <div class="mt-4 grid grid-cols-3 gap-2">
           <Ripple
-            class="bg-surface-container-highest/80 hover:bg-surface-container-highest border border-white/5 text-on-surface text-center py-2.5 px-3 rounded-xl font-bold cursor-pointer text-xs transition-all flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-40 pointer-events-none': store.isRunning || store.busy }"
+            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
+            :class="{ 'opacity-50 pointer-events-none': store.isRunning || store.busy }"
             @click="store.executeAction('start')"
           >
-            <span>▶</span> Start
+            Start
           </Ripple>
           <Ripple
-            class="bg-surface-container-highest/80 hover:bg-surface-container-highest border border-white/5 text-on-surface text-center py-2.5 px-3 rounded-xl font-bold cursor-pointer text-xs transition-all flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-40 pointer-events-none': !store.isRunning || store.busy }"
+            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
+            :class="{ 'opacity-50 pointer-events-none': !store.isRunning || store.busy }"
             @click="store.executeAction('stop')"
           >
-            <span>⏹</span> Stop
+            Stop
           </Ripple>
           <Ripple
-            class="bg-surface-container-highest/80 hover:bg-surface-container-highest border border-white/5 text-on-surface text-center py-2.5 px-3 rounded-xl font-bold cursor-pointer text-xs transition-all flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-40 pointer-events-none': store.busy }"
+            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
+            :class="{ 'opacity-50 pointer-events-none': store.busy }"
             @click="store.executeAction('restart')"
           >
-            <span>🔄</span> Restart
+            Restart
           </Ripple>
         </div>
       </div>
-    </div>
 
-    <!-- Backup & Restore Interactive Card -->
-    <div class="glass-card rounded-3xl p-5 space-y-3 border border-white/10">
-      <div class="flex items-center gap-2">
-        <span class="text-sm">💾</span>
+      <!-- Main Action (Open Dashboard) -->
+      <Ripple
+        @click="openDashboard"
+        class="cursor-pointer text-on-primary bg-primary mb-4 p-4 rounded-xl w-full flex items-center justify-between"
+      >
         <div>
-          <h3 class="text-sm font-black text-on-surface">Backup & Restore Config</h3>
-          <p class="text-xs text-on-surface-variant font-medium mt-0.5">
-            Pilih folder atau file cadangan (.tar.gz) langsung dari penjelajah file internal.
-          </p>
+          <h2 class="text-sm font-semibold mb-1">Buka Dashboard Web</h2>
+          <p class="text-xs opacity-80">Akses antarmuka penuh PicoClaw di browser</p>
+        </div>
+        <span class="text-xl">↗</span>
+      </Ripple>
+
+      <!-- Backup & Restore -->
+      <div class="bg-surface-container mb-4 p-4 rounded-xl text-on-surface">
+        <h3 class="text-sm font-medium mb-3">Manajemen Konfigurasi</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <Ripple
+            @click="openBackupPicker"
+            class="cursor-pointer bg-surface-container-high hover:bg-surface-container-highest p-3 rounded-lg flex flex-col gap-1 items-center justify-center"
+            :class="{ 'opacity-50 pointer-events-none': store.busy }"
+          >
+            <span class="text-xl">📁</span>
+            <span class="text-xs font-medium">Backup</span>
+          </Ripple>
+          <Ripple
+            @click="openRestorePicker"
+            class="cursor-pointer bg-surface-container-high hover:bg-surface-container-highest p-3 rounded-lg flex flex-col gap-1 items-center justify-center"
+            :class="{ 'opacity-50 pointer-events-none': store.busy }"
+          >
+            <span class="text-xl">📥</span>
+            <span class="text-xs font-medium">Restore</span>
+          </Ripple>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-2">
-        <Ripple
-          class="bg-surface-container-highest/80 hover:bg-surface-container-highest text-on-surface text-center text-xs font-bold py-2.5 px-3 rounded-xl cursor-pointer border border-white/5 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-          :class="{ 'opacity-40 pointer-events-none': store.busy }"
-          @click="openBackupPicker"
-        >
-          <span>📁</span> Backup Config
-        </Ripple>
-        <Ripple
-          class="bg-surface-container-highest/80 hover:bg-surface-container-highest text-on-surface text-center text-xs font-bold py-2.5 px-3 rounded-xl cursor-pointer border border-white/5 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-          :class="{ 'opacity-40 pointer-events-none': store.busy }"
-          @click="openRestorePicker"
-        >
-          <span>📥</span> Restore Config
-        </Ripple>
+
+      <!-- Info Card -->
+      <div class="bg-surface-container mb-4 p-4 rounded-xl text-on-surface">
+        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
+          <h3 class="text-sm font-medium">Versi Modul</h3>
+          <span class="text-xs text-on-surface-variant font-mono">{{ store.status.VERSION || '—' }}</span>
+        </div>
+        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
+          <h3 class="text-sm font-medium">Upstream Tag</h3>
+          <span class="text-xs text-on-surface-variant font-mono">{{ store.status.UPSTREAM || '—' }}</span>
+        </div>
+        <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
+          <h3 class="text-sm font-medium">Log File</h3>
+          <span class="text-[10px] text-on-surface-variant font-mono truncate max-w-[150px]">{{ store.status.LOG || '—' }}</span>
+        </div>
       </div>
+
     </div>
-
-    <!-- Specs Matrix Cards Grid -->
-    <div class="grid grid-cols-2 gap-3">
-      <div class="glass-card glass-card-hover rounded-2xl p-4 space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-[0.65rem] font-extrabold uppercase tracking-wider text-on-surface-variant">Versi Modul</span>
-          <span class="text-xs">📦</span>
-        </div>
-        <div class="text-base font-black text-on-surface truncate">{{ store.status.VERSION || '—' }}</div>
-      </div>
-
-      <div class="glass-card glass-card-hover rounded-2xl p-4 space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-[0.65rem] font-extrabold uppercase tracking-wider text-on-surface-variant">Upstream Tag</span>
-          <span class="text-xs">🏷️</span>
-        </div>
-        <div class="text-base font-black text-on-surface truncate">{{ store.status.UPSTREAM || '—' }}</div>
-      </div>
-
-      <div class="glass-card glass-card-hover rounded-2xl p-4 space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-[0.65rem] font-extrabold uppercase tracking-wider text-on-surface-variant">Port Lokal</span>
-          <span class="text-xs">🌐</span>
-        </div>
-        <div class="text-base font-black text-primary truncate">{{ store.status.PORT || '18800' }}</div>
-      </div>
-
-      <div class="glass-card glass-card-hover rounded-2xl p-4 space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-[0.65rem] font-extrabold uppercase tracking-wider text-on-surface-variant">Wrapper Termux</span>
-          <span class="text-xs">⚡</span>
-        </div>
-        <div class="text-base font-black truncate" :class="store.status.WRAPPERS === 'ready' ? 'text-emerald-400' : 'text-amber-400'">
-          {{ wrapperLabel(store.status.WRAPPERS) }}
-        </div>
-      </div>
-    </div>
-
-    <!-- System Path Shortcuts Card -->
-    <div class="glass-card rounded-2xl p-4 space-y-3">
-      <h3 class="text-xs font-black uppercase tracking-wider text-on-surface-variant flex items-center gap-2">
-        <span>📂</span> Direktori & Lokasi Penting
-      </h3>
-      <div class="space-y-2 text-xs">
-        <div class="flex items-center justify-between p-2.5 rounded-xl bg-surface-container-lowest border border-white/5">
-          <div>
-            <div class="font-bold text-on-surface">Data & Workspace</div>
-            <code class="text-[0.7rem] text-primary font-mono">/data/adb/picoclaw</code>
-          </div>
-          <button @click="copyText('/data/adb/picoclaw')" class="text-xs text-on-surface-variant hover:text-primary">📋</button>
-        </div>
-        <div class="flex items-center justify-between p-2.5 rounded-xl bg-surface-container-lowest border border-white/5">
-          <div>
-            <div class="font-bold text-on-surface">File Log Service</div>
-            <code class="text-[0.7rem] text-primary font-mono">{{ store.status.LOG }}</code>
-          </div>
-          <button @click="copyText(store.status.LOG)" class="text-xs text-on-surface-variant hover:text-primary">📋</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- File/Folder Picker Modal -->
-    <FilePickerModal
-      :show="showFilePicker"
-      :mode="pickerMode"
-      initial-path="/sdcard/Download"
-      @close="showFilePicker = false"
-      @select="handlePickerSelection"
-    />
   </div>
+
+  <FilePickerModal
+    :show="showFilePicker"
+    :mode="pickerMode"
+    initial-path="/sdcard/Download"
+    @close="showFilePicker = false"
+    @select="handlePickerSelection"
+  />
 </template>
 
 <script setup>
@@ -204,14 +133,6 @@ function handlePickerSelection(selectedPath) {
   }
 }
 
-function wrapperLabel(val) {
-  if (val === 'ready') return 'Ready (17 CLI)';
-  if (val === 'missing') return 'Belum Dipasang';
-  if (val === 'termux-not-found') return 'Termux Tidak Ada';
-  if (val?.startsWith('partial-')) return `Partial (${val.slice(8).replace('-of-', '/')})`;
-  return val || '—';
-}
-
 async function openDashboard() {
   if (!store.isRunning) {
     await store.executeAction('start');
@@ -219,11 +140,5 @@ async function openDashboard() {
   }
   const url = await store.control('url');
   window.location.assign(url);
-}
-
-function copyText(txt) {
-  if (!txt) return;
-  navigator.clipboard.writeText(txt);
-  store.toastMessage = 'Teks disalin ke clipboard!';
 }
 </script>

@@ -1,143 +1,75 @@
 <template>
   <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="show"
-        class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4"
-        @click.self="$emit('close')"
-      >
-        <Transition name="slide-up">
+    <div v-if="show" class="fm" @click.self="$emit('close')">
+      <div class="fm-box">
+        <div class="fm-bar">
+          <button class="icon-btn" @click="navigateUp" :disabled="currentPath === '/'" title="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          </button>
+          
+          <div class="fm-crumb">
+            <span
+              v-for="(crumb, idx) in breadcrumbs"
+              :key="crumb.path"
+              class="fm-seg-wrap"
+            >
+              <span 
+                class="fm-seg"
+                @click="navigateTo(crumb.path)"
+              >{{ crumb.name }}</span>
+              <span v-if="idx < breadcrumbs.length - 1" class="fm-sep">/</span>
+            </span>
+          </div>
+          
+          <button class="icon-btn" id="fmSort" @click="cycleSort">
+            <span>{{ currentSortLabel }}</span>
+          </button>
+        </div>
+
+        <div class="fm-list" :class="{ switching: loading }">
+          <div v-if="items.length === 0 && !loading" class="fm-empty">
+            Empty folder
+          </div>
+          
           <div
-            v-if="show"
-            class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-white/10 text-on-surface flex flex-col max-h-[85vh] h-[550px]"
+            v-for="item in sortedItems"
+            :key="item.name"
+            class="fm-item"
+            :class="{ pick: selectedFilePath === getFullPath(item.name) }"
+            @click="handleItemClick(item)"
           >
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-base">📂</span>
-                <h3 class="text-sm font-black text-on-surface">
-                  {{ mode === 'directory' ? 'Pilih Folder Tujuan Backup' : 'Pilih File Backup (.tar.gz)' }}
-                </h3>
-              </div>
-              <button
-                @click="$emit('close')"
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant transition-colors"
-              >
-                ✕
-              </button>
+            <div class="fm-ic" :class="{ dir: item.isDir }">
+              <svg v-if="item.isDir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+              <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </div>
-
-            <!-- Breadcrumb Navigation Bar -->
-            <div class="flex items-center justify-between gap-2 mb-3 bg-surface-container-lowest/80 border border-white/5 rounded-xl p-2.5">
-              <!-- Up/Back Button -->
-              <button
-                @click="navigateUp"
-                :disabled="currentPath === '/'"
-                class="w-7 h-7 rounded-lg bg-surface-container-highest flex items-center justify-center text-xs font-bold text-on-surface disabled:opacity-30 disabled:pointer-events-none hover:bg-primary/20 transition-all shrink-0"
-                title="Folder Induk"
-              >
-                ⬆
-              </button>
-
-              <!-- Scrollable Breadcrumbs -->
-              <div class="flex-1 min-w-0 overflow-x-auto scrollbar-hidden flex items-center text-xs space-x-1 font-mono">
-                <span
-                  v-for="(crumb, idx) in breadcrumbs"
-                  :key="crumb.path"
-                  class="flex items-center shrink-0"
-                >
-                  <button
-                    @click="navigateTo(crumb.path)"
-                    class="hover:text-primary transition-colors py-0.5 px-1 rounded hover:bg-white/5"
-                    :class="idx === breadcrumbs.length - 1 ? 'font-bold text-primary' : 'text-on-surface-variant'"
-                  >
-                    {{ crumb.name }}
-                  </button>
-                  <span v-if="idx < breadcrumbs.length - 1" class="text-on-surface-variant/40 mx-0.5">/</span>
-                </span>
-              </div>
-
-              <!-- Sort Cycle Button -->
-              <button
-                @click="cycleSort"
-                class="text-[0.65rem] font-bold px-2 py-1 rounded-lg bg-surface-container-highest text-on-surface-variant border border-white/5 shrink-0"
-              >
-                {{ currentSortLabel }}
-              </button>
+            <div class="fm-info">
+              <div class="fm-nm">{{ item.name }}</div>
+              <div class="fm-sub">{{ item.isDir ? 'Folder' : formatSize(item.size) }} · {{ formatDate(item.mtime) }}</div>
             </div>
-
-            <!-- Directory Items List -->
-            <div class="flex-1 overflow-y-auto scrollbar-hidden space-y-1 pr-1">
-              <div v-if="loading" class="text-center py-12 text-xs text-on-surface-variant flex items-center justify-center gap-2">
-                <span class="animate-spin">🔄</span> Membaca direktori...
-              </div>
-
-              <div v-else-if="items.length === 0" class="text-center py-12 text-xs text-on-surface-variant/60">
-                Folder ini kosong
-              </div>
-
-              <template v-else>
-                <div
-                  v-for="item in sortedItems"
-                  :key="item.name"
-                  @click="handleItemClick(item)"
-                  class="flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none"
-                  :class="getItemClass(item)"
-                >
-                  <div class="flex items-center gap-3 min-w-0">
-                    <span class="text-lg shrink-0">{{ item.isDir ? '📁' : '📦' }}</span>
-                    <div class="min-w-0">
-                      <div class="text-xs font-bold truncate text-on-surface">{{ item.name }}</div>
-                      <div class="text-[0.65rem] text-on-surface-variant/70 font-mono mt-0.5">
-                        {{ item.isDir ? 'Folder' : formatSize(item.size) }} · {{ formatDate(item.mtime) }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <span v-if="item.isDir" class="text-xs text-on-surface-variant/40">➔</span>
-                  <span v-else-if="selectedFilePath === getFullPath(item.name)" class="text-xs text-emerald-400 font-bold">✓</span>
-                </div>
-              </template>
-            </div>
-
-            <!-- Footer Action Area -->
-            <div class="pt-3 border-t border-white/10 mt-3 flex items-center justify-between gap-3">
-              <div class="text-xs text-on-surface-variant truncate font-mono">
-                <span class="opacity-60">Path:</span> {{ currentPath }}
-              </div>
-
-              <div class="flex gap-2 shrink-0">
-                <button
-                  @click="$emit('close')"
-                  class="text-xs font-bold py-2 px-4 rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-container-highest"
-                >
-                  Batal
-                </button>
-
-                <!-- Directory Select Button -->
-                <button
-                  v-if="mode === 'directory'"
-                  @click="confirmDirectorySelection"
-                  class="text-xs font-bold py-2 px-4 rounded-xl bg-primary text-on-primary shadow-md hover:brightness-110 active:scale-95 transition-all"
-                >
-                  Pilih Folder Ini
-                </button>
-
-                <!-- File Select Button -->
-                <button
-                  v-else
-                  @click="confirmFileSelection"
-                  :disabled="!selectedFilePath"
-                  class="text-xs font-bold py-2 px-4 rounded-xl bg-primary text-on-primary shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  Pilih File
-                </button>
-              </div>
+            <div v-if="selectedFilePath === getFullPath(item.name) && !item.isDir" class="fm-ic dir">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
           </div>
-        </Transition>
+        </div>
+
+        <div class="fm-foot">
+          <button class="fm-cancel ghosttext" @click="$emit('close')">Cancel</button>
+          
+          <button 
+            v-if="mode === 'directory'"
+            class="fm-cancel apply-btn"
+            @click="confirmDirectorySelection"
+          >Select Folder</button>
+          
+          <button 
+            v-else
+            class="fm-cancel apply-btn"
+            :disabled="!selectedFilePath"
+            @click="confirmFileSelection"
+          >Select File</button>
+        </div>
       </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
 
@@ -147,10 +79,9 @@ import * as KSU from '@/helpers/KernelSU';
 
 const props = defineProps({
   show: { type: Boolean, default: false },
-  mode: { type: String, default: 'file' }, // 'file' or 'directory'
+  mode: { type: String, default: 'file' },
   initialPath: { type: String, default: '/sdcard/Download' },
 });
-
 const emit = defineEmits(['close', 'select']);
 
 const currentPath = ref('/sdcard/Download');
@@ -162,10 +93,9 @@ const sortIndex = ref(0);
 const sortOptions = [
   { label: 'A–Z', sort: (a, b) => a.name.localeCompare(b.name) },
   { label: 'Z–A', sort: (a, b) => b.name.localeCompare(a.name) },
-  { label: 'Terbaru', sort: (a, b) => b.mtime - a.mtime },
-  { label: 'Terlama', sort: (a, b) => a.mtime - b.mtime },
+  { label: 'Newest', sort: (a, b) => b.mtime - a.mtime },
+  { label: 'Oldest', sort: (a, b) => a.mtime - b.mtime },
 ];
-
 const currentSortLabel = computed(() => sortOptions[sortIndex.value].label);
 
 const breadcrumbs = computed(() => {
@@ -174,9 +104,7 @@ const breadcrumbs = computed(() => {
   let pathAcc = '';
   for (const part of parts) {
     pathAcc += '/' + part;
-    if (pathAcc === '/sdcard' || pathAcc === '/storage/emulated/0') {
-      continue;
-    }
+    if (pathAcc === '/sdcard' || pathAcc === '/storage/emulated/0') continue;
     result.push({ name: part, path: pathAcc });
   }
   return result;
@@ -188,17 +116,13 @@ const sortedItems = computed(() => {
   return [...dirs, ...files];
 });
 
-function cycleSort() {
-  sortIndex.value = (sortIndex.value + 1) % sortOptions.length;
-}
+function cycleSort() { sortIndex.value = (sortIndex.value + 1) % sortOptions.length; }
 
 function getFullPath(name) {
   return currentPath.value === '/' ? `/${name}` : `${currentPath.value}/${name}`;
 }
 
-function shellQuote(s) {
-  return `'${String(s).replaceAll("'", "'\\''")}'`;
-}
+function shellQuote(s) { return `'${String(s).replaceAll("'", "'\\''")}'`; }
 
 async function loadDirectory(path) {
   loading.value = true;
@@ -217,12 +141,10 @@ async function loadDirectory(path) {
         const size = parseInt(parts[1], 10) || 0;
         const mtime = parseInt(parts[2], 10) || 0;
         const name = parts.slice(3).join('\t');
-
-        // Filter files if in 'file' mode (show tar.gz or all files)
+        
         if (!isDir && props.mode === 'file' && !name.endsWith('.tar.gz') && !name.endsWith('.gz') && !name.endsWith('.json')) {
-          continue;
+          continue; // Filter files
         }
-
         list.push({ isDir, size, mtime, name });
       }
     }
@@ -235,10 +157,7 @@ async function loadDirectory(path) {
   }
 }
 
-function navigateTo(path) {
-  loadDirectory(path);
-}
-
+function navigateTo(path) { loadDirectory(path); }
 function navigateUp() {
   if (currentPath.value === '/' || currentPath.value === '') return;
   const parent = currentPath.value.replace(/\/[^/]*$/, '') || '/';
@@ -265,14 +184,6 @@ function confirmFileSelection() {
   }
 }
 
-function getItemClass(item) {
-  const full = getFullPath(item.name);
-  if (selectedFilePath.value === full) {
-    return 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200';
-  }
-  return 'bg-surface-container-highest/50 border-white/5 hover:bg-surface-container-highest hover:border-white/10';
-}
-
 function formatSize(b) {
   if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB';
   if (b >= 1024) return (b / 1024).toFixed(1) + ' KB';
@@ -286,40 +197,87 @@ function formatDate(sec) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-watch(
-  () => props.show,
-  (val) => {
-    if (val) {
-      loadDirectory(props.initialPath || '/sdcard/Download');
-    }
-  }
-);
+watch(() => props.show, (val) => {
+  if (val) loadDirectory(props.initialPath || '/sdcard/Download');
+});
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
+.fm {
+  position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  animation: fmfade .2s ease both;
 }
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+@keyframes fmfade { from { opacity: 0 } to { opacity: 1 } }
 
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.fm-box {
+  background: var(--color-surface-container);
+  width: 100%; max-width: 460px; height: 80vh; max-height: 660px;
+  border-radius: 26px; display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.3);
+  animation: fmpop .3s cubic-bezier(.34,1.28,.64,1) both;
 }
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
-}
+@keyframes fmpop { from { opacity: 0; transform: scale(.93) } to { opacity: 1; transform: none } }
 
-@media (min-width: 640px) {
-  .slide-up-enter-from,
-  .slide-up-leave-to {
-    transform: scale(0.95) translateY(10px);
-    opacity: 0;
-  }
+.fm-bar { display: flex; align-items: center; gap: 6px; padding: 14px 12px 10px; }
+
+.fm-crumb {
+  flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 13.5px;
+  scrollbar-width: none; -ms-overflow-style: none; padding: 2px 2px;
 }
+.fm-crumb::-webkit-scrollbar { display: none; }
+.fm-seg-wrap { display: inline-block; }
+.fm-seg { cursor: pointer; color: var(--color-on-surface); font-weight: 500; }
+.fm-seg-wrap:last-child .fm-seg { color: var(--color-on-surface-variant); cursor: default; }
+.fm-sep { color: var(--color-on-surface-variant); padding: 0 5px; }
+
+#fmSort { width: auto; padding: 0 12px; height: 34px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+
+.fm-list {
+  flex: 1; overflow-y: auto; padding: 6px 8px; -webkit-overflow-scrolling: touch;
+  transition: transform .16s ease, opacity .16s ease;
+  will-change: transform, opacity;
+}
+.fm-list.switching { transform: scale(.97); opacity: 0; }
+
+.fm-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 13px;
+  cursor: pointer; transition: background .12s; color: var(--color-on-surface);
+}
+.fm-item:active { background: color-mix(in srgb, var(--color-on-surface-variant) 15%, transparent); }
+.fm-item.pick { background: color-mix(in srgb, var(--color-primary) 15%, transparent); }
+
+.fm-ic { width: 26px; height: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-on-surface-variant); }
+.fm-ic svg { width: 21px; height: 21px; display: block; }
+.fm-ic.dir { color: var(--color-primary); }
+
+.fm-info { flex: 1; min-width: 0; }
+.fm-nm { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.fm-sub { font-size: 11px; color: var(--color-on-surface-variant); margin-top: 1px; font-variant-numeric: tabular-nums; }
+.fm-empty { text-align: center; color: var(--color-on-surface-variant); font-size: 13px; padding: 36px 16px; }
+
+.fm-foot { display: flex; justify-content: flex-end; gap: 6px; padding: 8px 12px 12px; border-top: 1px solid var(--color-outline-variant); }
+.fm-cancel {
+  background: transparent; border: 0; color: var(--color-primary); cursor: pointer;
+  font: 600 14px/1 inherit; font-family: inherit; padding: 9px 16px; border-radius: 11px;
+  transition: background .14s, transform .12s, filter .15s;
+}
+.fm-cancel:active { background: color-mix(in srgb, var(--color-primary) 14%, transparent); }
+.fm-cancel.ghosttext { color: var(--color-on-surface-variant); }
+.fm-cancel.apply-btn { background: var(--color-primary); color: var(--color-background); border-radius: 10px; font-weight: 600; }
+.fm-cancel.apply-btn:hover { filter: brightness(1.06); }
+.fm-cancel.apply-btn:active { transform: scale(.96); }
+.fm-cancel.apply-btn[disabled] { opacity: .55; pointer-events: none; }
+
+.icon-btn {
+  width: 34px; height: 34px; flex-shrink: 0; border: 0; border-radius: 9px;
+  background: color-mix(in srgb, var(--color-on-surface-variant) 10%, transparent);
+  color: var(--color-on-surface-variant); cursor: pointer; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, transform .12s;
+}
+.icon-btn:hover { color: var(--color-on-surface); }
+.icon-btn:active { transform: scale(.92); }
+.icon-btn svg { width: 17px; height: 17px; display: block; }
+.icon-btn[disabled] { opacity: 0.4; pointer-events: none; }
 </style>
