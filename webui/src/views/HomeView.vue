@@ -3,7 +3,7 @@
     <div class="max-w-3xl mx-auto p-5 py-1">
       
       <!-- Daemon Status -->
-      <div class="bg-secondary-container mb-4 p-4 rounded-xl flex flex-col justify-between text-on-secondary-container">
+      <div class="bg-secondary-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col justify-between text-on-secondary-container">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" :class="store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'">
             <svg v-if="store.isRunning" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -55,7 +55,7 @@
       </Ripple>
 
       <!-- Backup & Restore -->
-      <div class="bg-surface-container mb-4 p-4 rounded-xl text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl text-on-surface">
         <h3 class="text-sm font-medium mb-3">Manajemen Konfigurasi</h3>
         <div class="grid grid-cols-2 gap-3">
           <Ripple
@@ -82,7 +82,7 @@
       </div>
 
       <!-- Info Card -->
-      <div class="bg-surface-container mb-4 p-4 rounded-xl text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl text-on-surface">
         <div class="py-2 flex justify-between items-center border-b border-outline-variant/30 last:border-0">
           <h3 class="text-sm font-medium">Versi Modul</h3>
           <span class="text-xs text-on-surface-variant font-mono">{{ store.status.VERSION || '—' }}</span>
@@ -98,7 +98,7 @@
       </div>
 
       <!-- Logs -->
-      <div class="bg-surface-container mb-4 p-4 rounded-xl flex flex-col h-64 text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col h-64 text-on-surface">
         <div class="flex justify-between items-center mb-3">
           <h3 class="text-sm font-medium">Service Logs</h3>
           <div class="flex items-center gap-2">
@@ -118,7 +118,7 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-y-auto bg-surface-container-low rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
+        <div class="flex-1 overflow-y-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
           <template v-if="filteredLogLines.length">
             <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed break-all" :class="logLineClass(line)">
               <span class="opacity-50 select-none mr-2">{{ i + 1 }}</span>
@@ -194,7 +194,9 @@ const logContainer = ref(null);
 
 const filteredLogLines = computed(() => {
   if (!store.logs) return [];
-  const lines = store.logs.split('\n').filter((l) => l.trim());
+  // Strip ANSI escape codes first
+  const cleanLogs = store.logs.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+  const lines = cleanLogs.split('\n').filter((l) => l.trim());
   if (!logSearch.value.trim()) return lines;
   const q = logSearch.value.toLowerCase();
   return lines.filter((l) => l.toLowerCase().includes(q));

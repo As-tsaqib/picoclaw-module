@@ -1,6 +1,6 @@
 <template>
   <nav ref="navEl"
-    class="fixed bottom-0 left-0 right-0 w-full flex items-end bg-surface-container shadow-lg z-50 md:left-0 md:top-0 md:bottom-0 md:w-24 md:h-full md:flex-col backdrop-blur-md border-t border-surface-container-high"
+    class="fixed bottom-0 left-0 right-0 w-full flex items-end bg-surface-container shadow-lg z-50 md:left-0 md:top-0 md:bottom-0 md:w-24 md:h-full md:flex-col backdrop-blur-md border-t border-outline-variant/30"
     :style="{
       paddingBottom: 'var(--window-inset-bottom, 0px)',
       paddingRight: 'var(--window-inset-right, 0px)',

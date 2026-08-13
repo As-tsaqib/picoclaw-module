@@ -3,7 +3,7 @@
     <div class="max-w-3xl mx-auto p-5 py-1 space-y-4">
 
       <!-- Boot Autostart Card -->
-      <div class="bg-surface-container p-4 rounded-xl text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
             <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
@@ -22,7 +22,7 @@
       </div>
 
       <!-- Network Port Settings Card -->
-      <div class="bg-surface-container p-4 rounded-xl text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4">
           <div class="flex items-start gap-3">
             <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span>
@@ -43,7 +43,7 @@
       </div>
 
       <!-- Termux Integration Card -->
-      <div class="bg-surface-container p-4 rounded-xl text-on-surface">
+      <div class="bg-surface-container border border-outline-variant/30 p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4 mb-4">
           <div class="flex items-start gap-3">
             <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span>
