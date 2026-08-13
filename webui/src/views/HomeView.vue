@@ -97,6 +97,38 @@
         </div>
       </div>
 
+      <!-- Logs -->
+      <div class="bg-surface-container mb-4 p-4 rounded-xl flex flex-col h-64 text-on-surface">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm font-medium">Service Logs</h3>
+          <div class="flex items-center gap-2">
+            <select v-model="store.logLines" @change="store.refresh()" class="bg-surface-container-high border-none text-xs rounded-md px-2 py-1 outline-none text-on-surface">
+              <option value="50">50 Baris</option>
+              <option value="100">100 Baris</option>
+              <option value="300">300 Baris</option>
+            </select>
+            <Ripple @click="store.executeAction('clear-logs')" class="cursor-pointer bg-error/20 text-error px-3 py-1 rounded-md text-xs font-medium">
+              Clear
+            </Ripple>
+          </div>
+        </div>
+        <input
+          v-model="logSearch"
+          type="text"
+          placeholder="Filter logs..."
+          class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
+        />
+        <div class="flex-1 overflow-y-auto bg-surface-container-low rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
+          <template v-if="filteredLogLines.length">
+            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed break-all" :class="logLineClass(line)">
+              <span class="opacity-50 select-none mr-2">{{ i + 1 }}</span>
+              {{ line }}
+            </div>
+          </template>
+          <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -110,7 +142,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePicoClawStore } from '@/stores/PicoClawStore';
 import * as KSU from '@/helpers/KernelSU';
@@ -155,4 +187,32 @@ async function openDashboard() {
     window.open(url, '_blank');
   }
 }
+
+// Log Viewer Logic
+const logSearch = ref('');
+const logContainer = ref(null);
+
+const filteredLogLines = computed(() => {
+  if (!store.logs) return [];
+  const lines = store.logs.split('\n').filter((l) => l.trim());
+  if (!logSearch.value.trim()) return lines;
+  const q = logSearch.value.toLowerCase();
+  return lines.filter((l) => l.toLowerCase().includes(q));
+});
+
+function logLineClass(line) {
+  if (line.includes('ERR') || line.includes('error') || line.includes('gagal')) return 'text-error';
+  if (line.includes('WRN') || line.includes('Warning')) return 'text-warning'; // Fallback to orange/yellow if exists, else text-on-surface
+  if (line.includes('aktif') || line.includes('RUNNING') || line.includes('PID')) return 'text-primary';
+  return 'text-on-surface-variant';
+}
+
+function scrollLogBottom() {
+  nextTick(() => {
+    if (logContainer.value) logContainer.value.scrollTop = logContainer.value.scrollHeight;
+  });
+}
+
+watch(() => store.logs, scrollLogBottom);
+onMounted(scrollLogBottom);
 </script>
