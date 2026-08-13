@@ -56,10 +56,17 @@ fi
 BUILD_PARENT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/picoclaw-build.XXXXXX")"
 BUILD_SOURCE_DIR="$BUILD_PARENT_DIR/source"
 cleanup_build_worktree() {
+  # Go's module cache intentionally creates read-only files. Restore write
+  # permission inside this disposable directory before Git/rm cleans it up.
+  # The scope is limited to the temporary build parent created above.
+  if [[ -d $BUILD_SOURCE_DIR ]]; then
+    chmod -R u+w -- "$BUILD_SOURCE_DIR" >/dev/null 2>&1 || true
+  fi
   if git -C "$SOURCE_DIR" worktree list --porcelain |
     grep -Fqx "worktree $BUILD_SOURCE_DIR"; then
     git -C "$SOURCE_DIR" worktree remove --force "$BUILD_SOURCE_DIR" >/dev/null 2>&1 || true
   fi
+  chmod -R u+w -- "$BUILD_PARENT_DIR" >/dev/null 2>&1 || true
   rm -rf -- "$BUILD_PARENT_DIR"
 }
 trap cleanup_build_worktree EXIT
