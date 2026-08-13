@@ -3,40 +3,23 @@
     <div class="max-w-3xl mx-auto p-5 py-1">
       
       <!-- Daemon Status -->
-      <div class="bg-secondary-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col justify-between text-on-secondary-container">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" :class="store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'">
-            <svg v-if="store.isRunning" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-          </div>
-          <div class="flex-1 flex flex-col">
-            <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>
-            <span class="text-xs pt-1 block opacity-80">{{ store.isRunning ? `PID ${store.status.PID} · Port ${store.status.PORT}` : 'Layanan tidak berjalan.' }}</span>
-          </div>
-        </div>
-        
-        <div class="mt-4 grid grid-cols-3 gap-2">
-          <Ripple
-            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-50 pointer-events-none': store.isRunning || store.busy }"
-            @click="store.executeAction('start')"
-          >
-            Start
-          </Ripple>
-          <Ripple
-            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-50 pointer-events-none': !store.isRunning || store.busy }"
-            @click="store.executeAction('stop')"
-          >
-            Stop
-          </Ripple>
-          <Ripple
-            class="bg-surface-container hover:bg-surface-container-high text-on-surface text-center py-2 px-3 rounded-lg font-medium cursor-pointer text-xs flex items-center justify-center gap-1.5"
-            :class="{ 'opacity-50 pointer-events-none': store.busy }"
-            @click="store.executeAction('restart')"
-          >
-            Restart
-          </Ripple>
+      <div class="bg-secondary-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex items-center gap-4 text-on-secondary-container">
+        <Ripple
+          @click="store.executeAction(store.isRunning ? 'stop' : 'start')"
+          class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-colors duration-200"
+          :class="[
+            store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant',
+            { 'opacity-50 pointer-events-none': store.busy }
+          ]"
+        >
+          <!-- Play icon (saat berhenti) -->
+          <svg v-if="!store.isRunning" class="w-6 h-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+          <!-- Stop icon (saat aktif) -->
+          <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="12" height="14" rx="1"></rect></svg>
+        </Ripple>
+        <div class="flex-1 flex flex-col">
+          <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>
+          <span class="text-xs pt-1 block opacity-80">{{ store.isRunning ? `PID ${store.status.PID} · Port ${store.status.PORT}` : 'Ketuk tombol untuk memulai.' }}</span>
         </div>
       </div>
 
