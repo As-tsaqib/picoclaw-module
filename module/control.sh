@@ -488,18 +488,10 @@ case "$control_command" in
   port)
     if [ -n "${2:-}" ]; then
       new_port=$2
-      case "$new_port" in
-        ''|*[!0-9]*)
-          module_log 'Port harus berupa angka antara 1 dan 65535.' >&2
-          exit 1
-          ;;
-        *)
-          if [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
-            module_log 'Port harus berada pada rentang 1..65535.' >&2
-            exit 1
-          fi
-          ;;
-      esac
+      if ! launcher_port_is_safe "$new_port"; then
+        module_log "Port harus berupa angka aman antara $PICO_MIN_SAFE_PORT dan $PICO_MAX_SAFE_PORT; port sistem/browser yang diblokir juga ditolak." >&2
+        exit 1
+      fi
       if ! launcher_lock_acquire port; then
         exit 1
       fi

@@ -93,8 +93,8 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 min-h-0 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
-          <pre v-if="filteredLogText" class="p-3 m-0" style="white-space: pre; overflow: visible; line-height: 1.2; letter-spacing: 0; font-size: 11px; font-family: 'DejaVu Sans Mono', monospace; width: max-content; min-width: 100%; tab-size: 8;">{{ filteredLogText }}</pre>
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
+          <pre v-if="filteredLogText" class="log-output p-3 m-0">{{ filteredLogText }}</pre>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
       </div>

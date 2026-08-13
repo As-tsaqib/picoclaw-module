@@ -30,7 +30,8 @@ release dari repository lain tidak diperlukan.
 - WebUI KSU Next untuk start/stop/restart launcher, autostart, status, log, dan
   pemasangan ulang wrapper Termux.
 - Launcher web berjalan otomatis di `http://127.0.0.1:18800` dan tidak diekspos
-  ke jaringan lokal secara default.
+  ke jaringan lokal secara default. Port yang dapat dipilih berada pada rentang
+  aman `1024–65535`; port sistem dan port yang diblokir browser ditolak.
 - Bersifat mountless (`skip_mount`): tidak memodifikasi `/system` dan tidak
   memerlukan metamodule OverlayFS di KSU Next.
 - Data persisten disimpan di `/data/adb/picoclaw`, sehingga tidak hilang saat

@@ -19,6 +19,9 @@ PICO_LOCK_OPERATION_FILE=$PICO_LOCK_DIR/operation
 PICO_TMP_DIR=$PICO_DATA_DIR/tmp
 PICO_CORE_BIN=$MODDIR/bin/picoclaw
 PICO_LAUNCHER_BIN=$MODDIR/bin/picoclaw-launcher
+PICO_DEFAULT_PORT=18800
+PICO_MIN_SAFE_PORT=1024
+PICO_MAX_SAFE_PORT=65535
 
 module_log() {
   printf '[PicoClaw] %s\n' "$*"
@@ -31,7 +34,7 @@ ensure_data_dirs() {
     {
       printf 'AUTOSTART=1\n'
       printf 'HOST=127.0.0.1\n'
-      printf 'PORT=18800\n'
+      printf 'PORT=%s\n' "$PICO_DEFAULT_PORT"
     } > "$PICO_SETTINGS"
   fi
   chmod 0700 "$PICO_DATA_DIR" "$PICO_RUN_DIR" "$PICO_LOG_DIR" "$PICO_TMP_DIR" 2>/dev/null || true
@@ -53,16 +56,31 @@ read_setting() {
 }
 
 launcher_port() {
-  selected_port=$(read_setting PORT 18800)
-  case "$selected_port" in
-    ''|*[!0-9]*) selected_port=18800 ;;
-    *)
-      if [ "$selected_port" -lt 1 ] || [ "$selected_port" -gt 65535 ]; then
-        selected_port=18800
-      fi
+  selected_port=$(read_setting PORT "$PICO_DEFAULT_PORT")
+  if ! launcher_port_is_safe "$selected_port"; then
+    selected_port=$PICO_DEFAULT_PORT
+  fi
+  printf '%s\n' "$selected_port"
+}
+
+# Keep the launcher on a non-privileged port that browsers can access. Chrome
+# and Chromium reject a small set of otherwise valid ports for security; keep
+# those out of the UI and the root control path as well.
+launcher_port_is_safe() {
+  safe_port=$1
+  case "$safe_port" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  if [ "$safe_port" -lt "$PICO_MIN_SAFE_PORT" ] ||
+    [ "$safe_port" -gt "$PICO_MAX_SAFE_PORT" ]; then
+    return 1
+  fi
+  case "$safe_port" in
+    2049|3659|4045|5060|6000|6566|6665|6666|6667|6668|6669|6697|10080)
+      return 1
       ;;
   esac
-  printf '%s\n' "$selected_port"
+  return 0
 }
 
 launcher_host() {

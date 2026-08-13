@@ -224,6 +224,26 @@ CONTROL_STATUS="$(sh "$CONTROL_MODULE_DIR/control.sh" status)"
 grep -Fxq "MODULE_VERSION=$TEST_VERSION" <<< "$CONTROL_STATUS"
 grep -Fxq 'BINARY_VERSION=test-binary' <<< "$CONTROL_STATUS"
 
+# Launcher ports must remain in the non-privileged/browser-safe range. Legacy
+# unsafe values are read as the default without being allowed to bind them.
+printf 'AUTOSTART=1\nHOST=127.0.0.1\nPORT=1\n' > "$CONTROL_DATA_DIR/settings.conf"
+LEGACY_STATUS="$(sh "$CONTROL_MODULE_DIR/control.sh" status)"
+grep -Fxq 'PORT=18800' <<< "$LEGACY_STATUS"
+if sh "$CONTROL_MODULE_DIR/control.sh" port 1 >/dev/null 2>&1; then
+  printf 'Port privileged 1 diterima.\n' >&2
+  exit 1
+fi
+if sh "$CONTROL_MODULE_DIR/control.sh" port 2049 >/dev/null 2>&1; then
+  printf 'Port browser-blocked 2049 diterima.\n' >&2
+  exit 1
+fi
+if sh "$CONTROL_MODULE_DIR/control.sh" port 123456 >/dev/null 2>&1; then
+  printf 'Port di luar rentang diterima.\n' >&2
+  exit 1
+fi
+sh "$CONTROL_MODULE_DIR/control.sh" port 18801 >/dev/null
+grep -Fxq 'PORT=18801' "$CONTROL_DATA_DIR/settings.conf"
+
 mkdir -p "$CONTROL_DATA_DIR/run/launcher.lock"
 printf 'not-a-pid\n' > "$CONTROL_DATA_DIR/run/launcher.lock/pid"
 printf 'stale-test\n' > "$CONTROL_DATA_DIR/run/launcher.lock/operation"

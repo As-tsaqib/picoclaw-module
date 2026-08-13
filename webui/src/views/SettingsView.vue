@@ -75,7 +75,7 @@
       <Modal :show="showPortModal" title="Ubah Port HTTP Launcher" @close="showPortModal = false">
         <div class="space-y-4">
           <p class="text-xs text-on-surface-variant">
-            Pilih atau ketik nomor port lokal baru (1 - 65535):
+            Pilih atau ketik port aman untuk akses browser (1024 - 65535). Port sistem atau port yang diblokir browser akan ditolak. Port rekomendasi: 18800.
           </p>
 
           <div class="flex flex-wrap gap-2">
@@ -92,7 +92,7 @@
           <input
             v-model="newPortInput"
             type="number"
-            min="1"
+            min="1024"
             max="65535"
             class="w-full bg-surface-container-low border border-outline-variant rounded-xl p-3 text-sm font-mono text-on-surface focus:outline-none focus:border-primary"
           />
@@ -133,9 +133,14 @@ function toggleAutostart(val) {
 }
 
 async function savePort() {
-  const p = parseInt(newPortInput.value, 10);
-  if (isNaN(p) || p < 1 || p > 65535) {
-    store.errorMessage = 'Port tidak valid (1-65535).';
+  const rawPort = String(newPortInput.value ?? '').trim();
+  const p = Number(rawPort);
+  const browserBlockedPorts = new Set([
+    2049, 3659, 4045, 5060, 6000, 6566,
+    6665, 6666, 6667, 6668, 6669, 6697, 10080,
+  ]);
+  if (!/^\d+$/.test(rawPort) || !Number.isSafeInteger(p) || p < 1024 || p > 65535 || browserBlockedPorts.has(p)) {
+    store.errorMessage = 'Port harus berupa angka aman 1024-65535 dan tidak termasuk port sistem/browser yang diblokir.';
     return;
   }
   showPortModal.value = false;

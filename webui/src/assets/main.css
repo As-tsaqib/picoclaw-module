@@ -171,6 +171,27 @@ textarea:focus-visible {
   max-height: calc(100dvh - 4rem);
 }
 
+.log-output {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.15;
+  letter-spacing: 0;
+  font-family: 'DejaVu Sans Mono', monospace;
+  font-size: clamp(5px, 1.35vw, 10px);
+  tab-size: 8;
+}
+
+@media (min-width: 768px) {
+  .log-output {
+    font-size: clamp(7px, 0.85vw, 10px);
+  }
+}
+
 @media (max-width: 767px) {
   .service-logs-card {
     height: clamp(16rem, 38dvh, 28rem);
