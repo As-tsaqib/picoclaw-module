@@ -1,6 +1,9 @@
 <template>
   <div id="app" class="min-h-screen flex flex-col bg-background text-on-background overflow-hidden">
-    <header class="sticky top-0 z-10 bg-background border-b border-surface-container">
+    <header 
+      class="sticky top-0 z-10 bg-background border-b border-surface-container"
+      :style="{ paddingTop: 'var(--window-inset-top, env(safe-area-inset-top, 0px))' }"
+    >
       <div class="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <img :src="logoBase64" alt="PicoClaw" class="w-8 h-8 rounded-md" />
