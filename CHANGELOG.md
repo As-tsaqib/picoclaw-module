@@ -1,6 +1,6 @@
 # PicoClaw Module 1.0.0
 
-Dibangun dari fork [`6e005116e02aa2152bd56e0f6772b9db04f6663e`](https://github.com/As-tsaqib/picoclaw/commit/6e005116e02aa2152bd56e0f6772b9db04f6663e), ref `main`, dengan versi binary `6e005116`.
+Dibangun dari fork [`53b6d6042151512f84dab51cdd19c85e0fa36055`](https://github.com/As-tsaqib/picoclaw/commit/53b6d6042151512f84dab51cdd19c85e0fa36055), ref `main`, dengan versi binary `v1.0.0`.
 
 ## Instalasi
 
@@ -13,7 +13,7 @@ Dibangun dari fork [`6e005116e02aa2152bd56e0f6772b9db04f6663e`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat(web): add advanced configuration dashboard (#3)
+chore: establish standalone v1.0.0 distribution (#4)
 
-Separate upstream Settings from a dedicated Advanced dashboard for runtime concurrency, curated memory and recall, checkpoints, and evolution controls. Includes scoped backend APIs, merge-patch persistence, responsive localized UI, and regression coverage.\n\nValidated by GitHub Actions; developed with AI assistance.
+Migrate module, updater, documentation, artifacts, and release workflows to the independently maintained fork. Remove automatic upstream sync and upstream publication dependencies; retain historical attribution and ancestry.
 
