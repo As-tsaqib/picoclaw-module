@@ -29,3 +29,6 @@ jobs:
 
       - name: Run tests
         run: ./scripts/test.sh
+
+      - name: Verify WebUI build
+        run: ./scripts/check-webui.sh

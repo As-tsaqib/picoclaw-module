@@ -24,10 +24,6 @@ fi
 while true; do
   sleep 30
   if [ "$(read_setting AUTOSTART 1)" = 1 ] && [ ! -f "$PICO_MANUAL_STOP" ]; then
-    if ! launcher_is_running; then
-      module_log "Watchdog: Launcher terhenti. Memulai ulang service..." >> "$PICO_LOG" 2>&1
-      launcher_start >> "$PICO_LOG" 2>&1
-    fi
+    launcher_watchdog_start >> "$PICO_LOG" 2>&1 || true
   fi
 done
-

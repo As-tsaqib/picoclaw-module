@@ -31,8 +31,7 @@ require_command file
 grep -qx 'module github.com/sipeed/picoclaw' "$SOURCE_DIR/go.mod" ||
   die "SOURCE_DIR bukan source tree PicoClaw"
 
-if ! git -C "$SOURCE_DIR" diff --quiet ||
-  ! git -C "$SOURCE_DIR" diff --cached --quiet; then
+if [[ -n $(git -C "$SOURCE_DIR" status --porcelain) ]]; then
   die "SOURCE_DIR harus bersih sebelum build"
 fi
 
@@ -44,9 +43,24 @@ fi
 git -C "$SOURCE_DIR" merge-base --is-ancestor "$tag_commit" "$head_commit" ||
   die "HEAD source ($head_commit) belum memuat commit upstream $UPSTREAM_TAG ($tag_commit)"
 
+BUILD_PARENT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/picoclaw-build.XXXXXX")"
+BUILD_SOURCE_DIR="$BUILD_PARENT_DIR/source"
+cleanup_build_worktree() {
+  if git -C "$SOURCE_DIR" worktree list --porcelain |
+    grep -Fqx "worktree $BUILD_SOURCE_DIR"; then
+    git -C "$SOURCE_DIR" worktree remove --force "$BUILD_SOURCE_DIR" >/dev/null 2>&1 || true
+  fi
+  rm -rf -- "$BUILD_PARENT_DIR"
+}
+trap cleanup_build_worktree EXIT
+
+git -C "$SOURCE_DIR" worktree add --detach "$BUILD_SOURCE_DIR" "$head_commit" >/dev/null ||
+  die "tidak dapat membuat worktree build sementara"
+printf 'Building from disposable worktree %s; source tree asli tidak diubah.\n' "$BUILD_SOURCE_DIR"
+
 source_repository="${PICOCLAW_SOURCE_REPOSITORY_URL:-https://github.com/As-tsaqib/picoclaw}"
 
-android_systray_stub="$SOURCE_DIR/web/backend/systray_stub_nocgo.go"
+android_systray_stub="$BUILD_SOURCE_DIR/web/backend/systray_stub_nocgo.go"
 android_systray_patch="$REPO_DIR/patches/android-cgo-systray.patch"
 legacy_systray_constraint='//go:build (darwin || freebsd || android) && !cgo'
 patched_systray_constraint='//go:build android || ((darwin || freebsd) && !cgo)'
@@ -55,9 +69,9 @@ if [[ -f $android_systray_stub ]] &&
   grep -Fqx "$legacy_systray_constraint" "$android_systray_stub"; then
   [[ -f $android_systray_patch ]] ||
     die "patch kompatibilitas launcher tidak ditemukan: $android_systray_patch"
-  git -C "$SOURCE_DIR" apply --unidiff-zero --check "$android_systray_patch" ||
+  git -C "$BUILD_SOURCE_DIR" apply --unidiff-zero --check "$android_systray_patch" ||
     die "patch kompatibilitas launcher tidak dapat diterapkan ke $UPSTREAM_TAG"
-  git -C "$SOURCE_DIR" apply --unidiff-zero "$android_systray_patch"
+  git -C "$BUILD_SOURCE_DIR" apply --unidiff-zero "$android_systray_patch"
   printf 'Applied Android cgo system-tray compatibility patch.\n'
 elif [[ -f $android_systray_stub ]] &&
   grep -Fqx "$patched_systray_constraint" "$android_systray_stub"; then
@@ -96,9 +110,9 @@ android_target="$($android_cc_path -dumpmachine)"
 printf 'Building PicoClaw %s for android/arm64...\n' "$UPSTREAM_TAG"
 printf 'Using cgo compiler %s (%s).\n' "$android_cc_path" "$android_target"
 CGO_ENABLED=1 CC="$android_cc_path" \
-  make -C "$SOURCE_DIR" VERSION="$MODULE_VERSION" build-android-bundle
+  make -C "$BUILD_SOURCE_DIR" VERSION="$MODULE_VERSION" build-android-bundle
 
 PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository" \
 PICOCLAW_SOURCE_COMMIT="$head_commit" \
 PICOCLAW_UPSTREAM_COMMIT="$tag_commit" \
-  bash "$SCRIPT_DIR/package-module.sh" "$SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"
+  bash "$SCRIPT_DIR/package-module.sh" "$BUILD_SOURCE_DIR" "$UPSTREAM_TAG" "$OUTPUT_DIR" "$head_commit"

@@ -6,7 +6,7 @@ MODDIR=${0%/*}
 # shellcheck source=module/termux.sh
 . "$MODDIR/termux.sh"
 
-write_setting() {
+write_setting_unlocked() {
   write_key=$1
   write_value=$2
   ensure_data_dirs
@@ -15,6 +15,394 @@ write_setting() {
   printf '%s=%s\n' "$write_key" "$write_value" >> "$write_temp"
   chmod 0600 "$write_temp" 2>/dev/null || true
   mv "$write_temp" "$PICO_SETTINGS"
+}
+
+write_setting() {
+  if ! launcher_lock_acquire setting; then
+    return 1
+  fi
+  write_setting_unlocked "$1" "$2"
+  write_result=$?
+  launcher_lock_release
+  return "$write_result"
+}
+
+backup_entry_allowed() {
+  backup_entry=$1
+  while [ "${backup_entry#./}" != "$backup_entry" ]; do
+    backup_entry=${backup_entry#./}
+  done
+  while [ -n "$backup_entry" ] && [ "${backup_entry%/}" != "$backup_entry" ]; do
+    backup_entry=${backup_entry%/}
+  done
+
+  case "$backup_entry" in
+    ''|/*|../*|*/../*|*/..|..|*//* ) return 1 ;;
+  esac
+  case "$backup_entry" in
+    config.json|settings.conf|.security.yml|auth.json|launcher-config.json|launcher-auth.db)
+      return 0
+      ;;
+    .ssh|.ssh/picoclaw_ed25519.key|.ssh/picoclaw_ed25519.key.pub)
+      return 0
+      ;;
+    workspace|workspace/*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+validate_backup_archive() {
+  validate_archive=$1
+  validate_list="$PICO_TMP_DIR/backup-list.$$"
+  validate_verbose="$PICO_TMP_DIR/backup-verbose.$$"
+  validate_count=0
+
+  if ! tar -tzf "$validate_archive" > "$validate_list" 2>/dev/null; then
+    rm -f "$validate_list" "$validate_verbose" 2>/dev/null || true
+    module_log 'File backup tidak dapat dibaca sebagai gzip tar.' >&2
+    return 1
+  fi
+
+  validate_error=0
+  while IFS= read -r validate_entry || [ -n "$validate_entry" ]; do
+    if ! backup_entry_allowed "$validate_entry"; then
+      module_log "Entry backup ditolak: $validate_entry" >&2
+      validate_error=1
+      break
+    fi
+    validate_count=$((validate_count + 1))
+  done < "$validate_list"
+  if [ "$validate_error" -ne 0 ]; then
+    rm -f "$validate_list" "$validate_verbose" 2>/dev/null || true
+    return 1
+  fi
+
+  if [ "$validate_count" -eq 0 ] ||
+    ! tar -tvzf "$validate_archive" > "$validate_verbose" 2>/dev/null; then
+    rm -f "$validate_list" "$validate_verbose" 2>/dev/null || true
+    module_log 'Backup kosong atau metadata archive tidak valid.' >&2
+    return 1
+  fi
+
+  validate_error=0
+  while IFS= read -r validate_line || [ -n "$validate_line" ]; do
+    validate_type=${validate_line%"${validate_line#?}"}
+    case "$validate_type" in
+      -|d) ;;
+      *)
+        module_log 'Backup mengandung symlink, hardlink, atau file khusus; restore dibatalkan.' >&2
+        validate_error=1
+        break
+        ;;
+    esac
+  done < "$validate_verbose"
+
+  rm -f "$validate_list" "$validate_verbose" 2>/dev/null || true
+  [ "$validate_error" -eq 0 ]
+}
+
+backup_create() {
+  backup_destination=$1
+  ensure_data_dirs
+
+  case "$backup_destination" in
+    /*) ;;
+    *) backup_destination="$(pwd)/$backup_destination" ;;
+  esac
+
+  if [ -L "$backup_destination" ]; then
+    module_log "Tujuan backup adalah symlink dan ditolak: $backup_destination" >&2
+    return 1
+  fi
+  if [ -d "$backup_destination" ]; then
+    module_log "Tujuan backup harus berupa nama file, bukan direktori: $backup_destination" >&2
+    return 1
+  fi
+  backup_destination_dir=$(dirname "$backup_destination")
+  if ! mkdir -p "$backup_destination_dir" 2>/dev/null; then
+    module_log "Tidak dapat membuat direktori tujuan backup: $backup_destination_dir" >&2
+    return 1
+  fi
+
+  backup_temp=$(mktemp "$backup_destination.tmp.XXXXXX" 2>/dev/null) || {
+    module_log "Tidak dapat membuat file sementara backup: $backup_destination" >&2
+    return 1
+  }
+  backup_tmp_dir=$(cd "$PICO_TMP_DIR" 2>/dev/null && pwd) || {
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log 'Tidak dapat menentukan direktori sementara backup.' >&2
+    return 1
+  }
+  backup_items_file=$(mktemp "$backup_tmp_dir/backup-items.XXXXXX" 2>/dev/null) || {
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log 'Tidak dapat membuat daftar file backup sementara.' >&2
+    return 1
+  }
+  backup_count=0
+  for backup_item in \
+    config.json settings.conf .security.yml auth.json \
+    launcher-config.json launcher-auth.db .ssh/picoclaw_ed25519.key \
+    .ssh/picoclaw_ed25519.key.pub workspace; do
+    if path_exists_or_link "$PICO_DATA_DIR/$backup_item"; then
+      if ! printf '%s\n' "$backup_item" >> "$backup_items_file"; then
+        rm -f "$backup_temp" "$backup_items_file" 2>/dev/null || true
+        module_log 'Tidak dapat menulis daftar file backup.' >&2
+        return 1
+      fi
+      backup_count=$((backup_count + 1))
+    fi
+  done
+  if [ "$backup_count" -eq 0 ]; then
+    rm -f "$backup_items_file" 2>/dev/null || true
+    module_log 'Tidak ada data PicoClaw yang dapat dibackup.' >&2
+    return 1
+  fi
+
+  (
+    cd "$PICO_DATA_DIR" || exit 1
+    # The list contains only fixed allowlisted names.
+    tar -czf "$backup_temp" -T "$backup_items_file"
+  )
+  backup_tar_result=$?
+  rm -f "$backup_items_file" 2>/dev/null || true
+  if [ "$backup_tar_result" -ne 0 ]; then
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log 'Gagal membuat backup.' >&2
+    return 1
+  fi
+  if [ ! -s "$backup_temp" ]; then
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log 'Gagal membuat backup.' >&2
+    return 1
+  fi
+  if ! validate_backup_archive "$backup_temp"; then
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log 'Backup mengandung entry yang tidak aman dan tidak disimpan.' >&2
+    return 1
+  fi
+  chmod 0600 "$backup_temp" 2>/dev/null || true
+  if ! mv -f "$backup_temp" "$backup_destination"; then
+    rm -f "$backup_temp" 2>/dev/null || true
+    module_log "Tidak dapat menyelesaikan backup ke $backup_destination" >&2
+    return 1
+  fi
+  module_log "Backup berhasil disimpan ke $backup_destination"
+  return 0
+}
+
+restore_cleanup() {
+  rm -f "${restore_archive:-}" "${restore_journal:-}" 2>/dev/null || true
+  rm -rf "${restore_stage:-}" "${restore_rollback:-}" 2>/dev/null || true
+}
+
+restore_rollback_data() {
+  [ -f "$restore_journal" ] || return 0
+  [ -n "$PICO_DATA_DIR" ] && [ "$PICO_DATA_DIR" != / ] || return 1
+  while IFS=' ' read -r restore_had_previous restore_item ||
+    [ -n "$restore_item" ]; do
+    [ -n "$restore_item" ] || continue
+    rm -rf -- "${PICO_DATA_DIR:?}/$restore_item" 2>/dev/null || true
+    if [ "$restore_had_previous" = 1 ] &&
+      path_exists_or_link "$restore_rollback/$restore_item"; then
+      restore_parent=$(dirname "$PICO_DATA_DIR/$restore_item")
+      mkdir -p "$restore_parent" 2>/dev/null || true
+      mv "$restore_rollback/$restore_item" "$PICO_DATA_DIR/$restore_item" 2>/dev/null || true
+    fi
+  done < "$restore_journal"
+}
+
+restore_parent_is_safe() {
+  restore_parent_path=$(dirname "$1")
+  while [ "$restore_parent_path" != "$PICO_DATA_DIR" ] &&
+    [ "$restore_parent_path" != / ]; do
+    if [ -L "$restore_parent_path" ]; then
+      return 1
+    fi
+    restore_parent_path=$(dirname "$restore_parent_path")
+  done
+  return 0
+}
+
+restore_entry_type_allowed() {
+  restore_type_item=$1
+  restore_type_path=$2
+  [ ! -L "$restore_type_path" ] || return 1
+  case "$restore_type_item" in
+    workspace)
+      [ -d "$restore_type_path" ]
+      ;;
+    .ssh/picoclaw_ed25519.key|.ssh/picoclaw_ed25519.key.pub)
+      [ -f "$restore_type_path" ]
+      ;;
+    *)
+      [ -f "$restore_type_path" ]
+      ;;
+  esac
+}
+
+restore_commit_data() {
+  : > "$restore_journal" || return 1
+  for restore_item in \
+    config.json settings.conf .security.yml auth.json \
+    launcher-config.json launcher-auth.db .ssh/picoclaw_ed25519.key \
+    .ssh/picoclaw_ed25519.key.pub workspace; do
+    restore_source="$restore_stage/$restore_item"
+    if ! path_exists_or_link "$restore_source"; then
+      continue
+    fi
+    if ! restore_entry_type_allowed "$restore_item" "$restore_source" ||
+      ! restore_parent_is_safe "$PICO_DATA_DIR/$restore_item"; then
+      return 1
+    fi
+
+    restore_had_previous=0
+    if path_exists_or_link "$PICO_DATA_DIR/$restore_item"; then
+      restore_had_previous=1
+      restore_backup_parent=$(dirname "$restore_rollback/$restore_item")
+      mkdir -p "$restore_backup_parent" || return 1
+      mv "$PICO_DATA_DIR/$restore_item" "$restore_rollback/$restore_item" || return 1
+    fi
+    if ! printf '%s %s\n' "$restore_had_previous" "$restore_item" >> "$restore_journal"; then
+      if [ "$restore_had_previous" = 1 ] &&
+        path_exists_or_link "$restore_rollback/$restore_item"; then
+        mv "$restore_rollback/$restore_item" "$PICO_DATA_DIR/$restore_item" 2>/dev/null || true
+      fi
+      return 1
+    fi
+    mkdir -p "$(dirname "$PICO_DATA_DIR/$restore_item")" || return 1
+    mv "$restore_source" "$PICO_DATA_DIR/$restore_item" || return 1
+  done
+  return 0
+}
+
+restore_fix_permissions() {
+  for restore_item in \
+    config.json settings.conf .security.yml auth.json \
+    launcher-config.json launcher-auth.db .ssh/picoclaw_ed25519.key \
+    .ssh/picoclaw_ed25519.key.pub; do
+    if [ -f "$PICO_DATA_DIR/$restore_item" ]; then
+      chmod 0600 "$PICO_DATA_DIR/$restore_item" || return 1
+    fi
+  done
+  if [ -d "$PICO_DATA_DIR/workspace" ]; then
+    chmod 0700 "$PICO_DATA_DIR/workspace" || return 1
+  fi
+  return 0
+}
+
+backup_run() {
+  if ! launcher_lock_acquire backup; then
+    return 1
+  fi
+
+  backup_was_running=0
+  if launcher_is_running; then
+    backup_was_running=1
+    if ! launcher_stop_unlocked; then
+      module_log 'Launcher tidak dapat dihentikan; backup dibatalkan.' >&2
+      launcher_lock_release
+      return 1
+    fi
+  fi
+
+  backup_create "$1"
+  backup_result=$?
+  if [ "$backup_was_running" = 1 ] && ! launcher_start_unlocked; then
+    module_log 'Backup selesai, tetapi launcher gagal dimulai ulang.' >&2
+    backup_result=1
+  fi
+  launcher_lock_release
+  return "$backup_result"
+}
+
+restore_run() {
+  restore_source_file=$1
+  if [ -z "$restore_source_file" ] || [ ! -f "$restore_source_file" ] ||
+    [ -L "$restore_source_file" ]; then
+    module_log "File backup tidak ditemukan atau bukan file biasa: ${restore_source_file:-<kosong>}" >&2
+    return 1
+  fi
+  ensure_data_dirs
+  if ! launcher_lock_acquire restore; then
+    return 1
+  fi
+
+  restore_archive=
+  restore_stage=
+  restore_rollback=
+  restore_journal=
+  if ! restore_archive=$(mktemp "$PICO_TMP_DIR/restore-archive.XXXXXX" 2>/dev/null) ||
+    ! restore_stage=$(mktemp -d "$PICO_TMP_DIR/restore-stage.XXXXXX" 2>/dev/null) ||
+    ! restore_rollback=$(mktemp -d "$PICO_TMP_DIR/restore-rollback.XXXXXX" 2>/dev/null) ||
+    ! restore_journal=$(mktemp "$PICO_TMP_DIR/restore-journal.XXXXXX" 2>/dev/null); then
+    module_log 'Tidak dapat membuat area restore sementara.' >&2
+    restore_cleanup
+    launcher_lock_release
+    return 1
+  fi
+
+  if ! cp "$restore_source_file" "$restore_archive" 2>/dev/null ||
+    ! chmod 0600 "$restore_archive" 2>/dev/null ||
+    ! validate_backup_archive "$restore_archive" ||
+    ! tar -xzf "$restore_archive" -C "$restore_stage" 2>/dev/null; then
+    module_log 'File backup merusak, tidak aman, atau format tidak valid.' >&2
+    restore_cleanup
+    launcher_lock_release
+    return 1
+  fi
+
+  restore_was_running=0
+  if launcher_is_running; then
+    restore_was_running=1
+    if ! launcher_stop_unlocked; then
+      module_log 'Launcher tidak dapat dihentikan; restore dibatalkan.' >&2
+      restore_cleanup
+      launcher_lock_release
+      return 1
+    fi
+  fi
+
+  if ! restore_commit_data; then
+    restore_rollback_data
+    if [ "$restore_was_running" = 1 ]; then
+      launcher_start_unlocked >/dev/null 2>&1 ||
+        module_log 'Restore gagal dan launcher lama juga tidak dapat dimulai ulang.' >&2
+    fi
+    module_log 'Restore dibatalkan; data lama dipertahankan.' >&2
+    restore_cleanup
+    launcher_lock_release
+    return 1
+  fi
+
+  ensure_data_dirs
+  if ! restore_fix_permissions; then
+    module_log 'Restore berhasil tetapi permission data tidak dapat diamankan.' >&2
+    restore_rollback_data
+    if [ "$restore_was_running" = 1 ]; then
+      launcher_start_unlocked >/dev/null 2>&1 || true
+    fi
+    restore_cleanup
+    launcher_lock_release
+    return 1
+  fi
+  if [ "$restore_was_running" = 1 ] && ! launcher_start_unlocked; then
+    module_log 'Launcher gagal dimulai dengan data hasil restore; mengembalikan data lama.' >&2
+    restore_rollback_data
+    launcher_start_unlocked >/dev/null 2>&1 ||
+      module_log 'Data lama dikembalikan, tetapi launcher lama gagal dimulai.' >&2
+    restore_cleanup
+    launcher_lock_release
+    return 1
+  fi
+
+  restore_cleanup
+  launcher_lock_release
+  module_log "Restore berhasil dari $restore_source_file"
+  return 0
 }
 
 show_status() {
@@ -70,11 +458,7 @@ case "$control_command" in
     launcher_restart
     ;;
   toggle)
-    if launcher_is_running; then
-      launcher_stop
-    else
-      launcher_start
-    fi
+    launcher_toggle
     ;;
   autostart)
     case "${2:-}" in
@@ -106,10 +490,22 @@ case "$control_command" in
           fi
           ;;
       esac
-      write_setting PORT "$new_port"
-      if launcher_is_running; then
-        launcher_restart
+      if ! launcher_lock_acquire port; then
+        exit 1
       fi
+      old_port=$(launcher_port)
+      if ! write_setting_unlocked PORT "$new_port"; then
+        launcher_lock_release
+        exit 1
+      fi
+      if launcher_is_running && ! launcher_restart_unlocked; then
+        write_setting_unlocked PORT "$old_port" || true
+        launcher_start_unlocked >/dev/null 2>&1 || true
+        launcher_lock_release
+        module_log "Launcher gagal dipindahkan ke port $new_port; port dikembalikan ke $old_port." >&2
+        exit 1
+      fi
+      launcher_lock_release
       module_log "Port berhasil diubah ke $new_port."
     else
       launcher_port
@@ -127,46 +523,11 @@ case "$control_command" in
         dest_file="$PICO_DATA_DIR/picoclaw-backup-${timestamp}.tar.gz"
       fi
     fi
-    ensure_data_dirs
-    dest_dir=$(dirname "$dest_file")
-    mkdir -p "$dest_dir" 2>/dev/null || true
-
-    (
-      cd "$PICO_DATA_DIR" || exit 1
-      tar -czf "$dest_file" \
-        config.json settings.conf workspace \
-        2>/dev/null || tar -czf "$dest_file" config.json settings.conf 2>/dev/null
-    )
-    if [ -f "$dest_file" ]; then
-      module_log "Backup berhasil disimpan ke $dest_file"
-    else
-      module_log "Gagal membuat backup." >&2
-      exit 1
-    fi
+    backup_run "$dest_file"
     ;;
   restore)
     src_file=${2:-}
-    if [ -z "$src_file" ] || [ ! -f "$src_file" ]; then
-      module_log "File backup tidak ditemukan: ${src_file:-<kosong>}" >&2
-      exit 1
-    fi
-    was_running=0
-    if launcher_is_running; then
-      was_running=1
-      launcher_stop
-    fi
-    ensure_data_dirs
-    if tar -tzf "$src_file" >/dev/null 2>&1; then
-      tar -xzf "$src_file" -C "$PICO_DATA_DIR" 2>/dev/null
-      ensure_data_dirs
-      module_log "Restore berhasil dari $src_file"
-      if [ "$was_running" = 1 ]; then
-        launcher_start
-      fi
-    else
-      module_log "File backup merusak atau format tidak valid." >&2
-      exit 1
-    fi
+    restore_run "$src_file"
     ;;
   wrappers)
     case "${2:-status}" in
@@ -215,4 +576,3 @@ case "$control_command" in
     exit 2
     ;;
 esac
-

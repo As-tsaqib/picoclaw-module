@@ -13,6 +13,9 @@ PICO_LOG_DIR=$PICO_DATA_DIR/logs
 PICO_LOG=$PICO_LOG_DIR/launcher-module.log
 PICO_PID_FILE=$PICO_RUN_DIR/launcher.pid
 PICO_MANUAL_STOP=$PICO_RUN_DIR/manual_stop
+PICO_LOCK_DIR=$PICO_RUN_DIR/launcher.lock
+PICO_LOCK_PID_FILE=$PICO_LOCK_DIR/pid
+PICO_LOCK_OPERATION_FILE=$PICO_LOCK_DIR/operation
 PICO_TMP_DIR=$PICO_DATA_DIR/tmp
 PICO_CORE_BIN=$MODDIR/bin/picoclaw
 PICO_LAUNCHER_BIN=$MODDIR/bin/picoclaw-launcher
@@ -79,6 +82,79 @@ launcher_pid() {
   printf '%s\n' "$pid_value"
 }
 
+path_exists_or_link() {
+  [ -e "$1" ] || [ -L "$1" ]
+}
+
+launcher_lock_acquire() {
+  ensure_data_dirs
+  lock_operation=${1:-lifecycle}
+  lock_wait=0
+
+  while ! mkdir "$PICO_LOCK_DIR" 2>/dev/null; do
+    lock_pid=
+    if [ -f "$PICO_LOCK_PID_FILE" ]; then
+      lock_pid=$(sed -n '1p' "$PICO_LOCK_PID_FILE" 2>/dev/null)
+    fi
+
+    # A writer may have created the directory just before writing its PID.
+    if [ -z "$lock_pid" ]; then
+      # Do not reclaim an incompletely initialized lock immediately: the
+      # owner can have created the directory and still be writing its PID.
+      if [ "$lock_wait" -lt 30 ]; then
+        sleep 1
+        lock_wait=$((lock_wait + 1))
+        continue
+      fi
+    fi
+
+    lock_pid_alive=0
+    case "$lock_pid" in
+      ''|*[!0-9]*) ;;
+      *)
+        if kill -0 "$lock_pid" 2>/dev/null; then
+          lock_pid_alive=1
+        fi
+        ;;
+    esac
+
+    if [ "$lock_pid_alive" -eq 0 ]; then
+      stale_lock_dir="$PICO_LOCK_DIR.stale.$$.$lock_wait"
+      if mv "$PICO_LOCK_DIR" "$stale_lock_dir" 2>/dev/null; then
+        rm -rf "$stale_lock_dir" 2>/dev/null || true
+        continue
+      fi
+    fi
+
+    if [ "$lock_wait" -ge 30 ]; then
+      module_log "Operasi $lock_operation menunggu lock launcher terlalu lama." >&2
+      return 1
+    fi
+    sleep 1
+    lock_wait=$((lock_wait + 1))
+  done
+
+  printf '%s\n' "$$" > "$PICO_LOCK_PID_FILE" || {
+    rmdir "$PICO_LOCK_DIR" 2>/dev/null || true
+    module_log 'Tidak dapat menulis owner lock launcher.' >&2
+    return 1
+  }
+  printf '%s\n' "$lock_operation" > "$PICO_LOCK_OPERATION_FILE" 2>/dev/null || true
+  chmod 0600 "$PICO_LOCK_PID_FILE" "$PICO_LOCK_OPERATION_FILE" 2>/dev/null || true
+  return 0
+}
+
+launcher_lock_release() {
+  [ -d "$PICO_LOCK_DIR" ] || return 0
+  lock_owner=
+  if [ -f "$PICO_LOCK_PID_FILE" ]; then
+    lock_owner=$(sed -n '1p' "$PICO_LOCK_PID_FILE" 2>/dev/null)
+  fi
+  [ "$lock_owner" = "$$" ] || return 0
+  rm -f "$PICO_LOCK_PID_FILE" "$PICO_LOCK_OPERATION_FILE" 2>/dev/null || true
+  rmdir "$PICO_LOCK_DIR" 2>/dev/null || true
+}
+
 launcher_is_running() {
   running_pid=$(launcher_pid 2>/dev/null) || return 1
   [ -d "/proc/$running_pid" ] || return 1
@@ -86,8 +162,7 @@ launcher_is_running() {
   tr '\000' ' ' < "/proc/$running_pid/cmdline" 2>/dev/null | grep -Fq "$PICO_LAUNCHER_BIN"
 }
 
-launcher_start() {
-  ensure_data_dirs
+launcher_start_unlocked() {
   rm -f "$PICO_MANUAL_STOP" 2>/dev/null || true
 
   if launcher_is_running; then
@@ -138,7 +213,17 @@ launcher_start() {
   return 1
 }
 
-launcher_stop() {
+launcher_start() {
+  if ! launcher_lock_acquire start; then
+    return 1
+  fi
+  launcher_start_unlocked
+  launcher_result=$?
+  launcher_lock_release
+  return "$launcher_result"
+}
+
+launcher_stop_unlocked() {
   touch "$PICO_MANUAL_STOP" 2>/dev/null || true
 
   if ! launcher_is_running; then
@@ -157,11 +242,67 @@ launcher_stop() {
   if kill -0 "$stop_pid" 2>/dev/null; then
     kill -9 "$stop_pid" 2>/dev/null || true
   fi
+  if kill -0 "$stop_pid" 2>/dev/null; then
+    module_log "Launcher PID $stop_pid tidak dapat dihentikan." >&2
+    return 1
+  fi
   rm -f "$PICO_PID_FILE"
   module_log "Launcher dihentikan."
 }
 
+launcher_stop() {
+  if ! launcher_lock_acquire stop; then
+    return 1
+  fi
+  launcher_stop_unlocked
+  launcher_result=$?
+  launcher_lock_release
+  return "$launcher_result"
+}
+
+launcher_restart_unlocked() {
+  launcher_stop_unlocked || return 1
+  launcher_start_unlocked
+}
+
 launcher_restart() {
-  launcher_stop
-  launcher_start
+  if ! launcher_lock_acquire restart; then
+    return 1
+  fi
+  launcher_restart_unlocked
+  launcher_result=$?
+  launcher_lock_release
+  return "$launcher_result"
+}
+
+launcher_toggle() {
+  if ! launcher_lock_acquire toggle; then
+    return 1
+  fi
+  if launcher_is_running; then
+    launcher_stop_unlocked
+  else
+    launcher_start_unlocked
+  fi
+  launcher_result=$?
+  launcher_lock_release
+  return "$launcher_result"
+}
+
+launcher_watchdog_start() {
+  if ! launcher_lock_acquire watchdog; then
+    return 1
+  fi
+
+  if [ "$(read_setting AUTOSTART 1)" = 1 ] &&
+    [ ! -f "$PICO_MANUAL_STOP" ] && ! launcher_is_running; then
+    module_log 'Watchdog: Launcher terhenti. Memulai ulang service...'
+    launcher_start_unlocked
+    launcher_result=$?
+  else
+    launcher_result=0
+  fi
+
+  launcher_lock_release
+  return "$launcher_result"
 }

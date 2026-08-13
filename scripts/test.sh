@@ -43,6 +43,14 @@ grep -Fq 'VERSION="$MODULE_VERSION"' "$REPO_DIR/scripts/build-upstream.sh"
 # shellcheck disable=SC2016
 grep -Fq 'merge-base --is-ancestor "$tag_commit" "$head_commit"' \
   "$REPO_DIR/scripts/build-upstream.sh"
+# shellcheck disable=SC2016
+grep -Fq 'git -C "$SOURCE_DIR" status --porcelain' \
+  "$REPO_DIR/scripts/build-upstream.sh"
+# shellcheck disable=SC2016
+grep -Fq 'git -C "$SOURCE_DIR" worktree add --detach "$BUILD_SOURCE_DIR" "$head_commit"' \
+  "$REPO_DIR/scripts/build-upstream.sh"
+grep -Fq 'PICOCLAW_WEBUI_OUT_DIR' "$REPO_DIR/webui/vite.config.js"
+[[ -x $REPO_DIR/scripts/check-webui.sh ]]
 grep -Fq $'build\\tCGO_ENABLED=1' "$REPO_DIR/scripts/package-module.sh"
 # shellcheck disable=SC2016
 grep -Fq 'sourceRepo=$SOURCE_REPOSITORY' "$REPO_DIR/scripts/package-module.sh"
@@ -109,6 +117,55 @@ unzip -q "$ARCHIVE" -d "$TEST_DIR/unpacked"
 [[ -x $TEST_DIR/unpacked/bin/picoclaw ]]
 [[ -x $TEST_DIR/unpacked/bin/picoclaw-launcher ]]
 [[ -x $TEST_DIR/unpacked/service.sh ]]
+
+# Exercise the root control path with an isolated data directory. This covers
+# credential files, archive allowlisting, and restore atomicity without touching
+# a real Android /data tree.
+CONTROL_DATA_DIR="$TEST_DIR/control-data"
+mkdir -p "$CONTROL_DATA_DIR/workspace" "$CONTROL_DATA_DIR/.ssh"
+printf 'original-config\n' > "$CONTROL_DATA_DIR/config.json"
+printf 'api-secret\n' > "$CONTROL_DATA_DIR/.security.yml"
+printf 'oauth-token\n' > "$CONTROL_DATA_DIR/auth.json"
+printf 'launcher-password-hash\n' > "$CONTROL_DATA_DIR/launcher-config.json"
+printf 'sqlite-auth\n' > "$CONTROL_DATA_DIR/launcher-auth.db"
+printf 'private-key\n' > "$CONTROL_DATA_DIR/.ssh/picoclaw_ed25519.key"
+printf 'public-key\n' > "$CONTROL_DATA_DIR/.ssh/picoclaw_ed25519.key.pub"
+printf 'workspace-note\n' > "$CONTROL_DATA_DIR/workspace/note.txt"
+
+CONTROL_MODULE_DIR="$TEST_DIR/control-module"
+mkdir -p "$CONTROL_MODULE_DIR"
+cp "$REPO_DIR/module/control.sh" "$CONTROL_MODULE_DIR/control.sh"
+cp "$REPO_DIR/module/termux.sh" "$CONTROL_MODULE_DIR/termux.sh"
+sed "s|PICO_DATA_DIR=/data/adb/picoclaw|PICO_DATA_DIR=$CONTROL_DATA_DIR|" \
+  "$REPO_DIR/module/common.sh" > "$CONTROL_MODULE_DIR/common.sh"
+chmod 0755 "$CONTROL_MODULE_DIR/control.sh" "$CONTROL_MODULE_DIR/common.sh" "$CONTROL_MODULE_DIR/termux.sh"
+
+mkdir -p "$CONTROL_DATA_DIR/run/launcher.lock"
+printf 'not-a-pid\n' > "$CONTROL_DATA_DIR/run/launcher.lock/pid"
+printf 'stale-test\n' > "$CONTROL_DATA_DIR/run/launcher.lock/operation"
+sh "$CONTROL_MODULE_DIR/control.sh" backup "$TEST_DIR/control-backup.tar.gz" >/dev/null
+[[ ! -d $CONTROL_DATA_DIR/run/launcher.lock ]]
+for backup_entry in \
+  config.json .security.yml auth.json launcher-config.json launcher-auth.db \
+  .ssh/picoclaw_ed25519.key .ssh/picoclaw_ed25519.key.pub workspace/note.txt; do
+  tar -tzf "$TEST_DIR/control-backup.tar.gz" | grep -Fxq "$backup_entry"
+done
+
+printf 'changed-config\n' > "$CONTROL_DATA_DIR/config.json"
+sh "$CONTROL_MODULE_DIR/control.sh" restore \
+  "$TEST_DIR/control-backup.tar.gz" >/dev/null
+grep -Fxq 'original-config' "$CONTROL_DATA_DIR/config.json"
+grep -Fxq 'api-secret' "$CONTROL_DATA_DIR/.security.yml"
+[[ $(stat -c '%a' "$CONTROL_DATA_DIR/launcher-auth.db") == 600 ]]
+
+mkdir -p "$TEST_DIR/unsafe-payload/config.json"
+tar -czf "$TEST_DIR/unsafe-type.tar.gz" -C "$TEST_DIR/unsafe-payload" config.json
+if sh "$CONTROL_MODULE_DIR/control.sh" restore \
+  "$TEST_DIR/unsafe-type.tar.gz" >/dev/null 2>&1; then
+  printf 'Archive dengan tipe entry tidak valid diterima.\n' >&2
+  exit 1
+fi
+grep -Fxq 'original-config' "$CONTROL_DATA_DIR/config.json"
 
 bash "$SCRIPT_DIR/write-update-json.sh" \
   "$TEST_VERSION" \

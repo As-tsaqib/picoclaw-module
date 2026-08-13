@@ -1,9 +1,12 @@
 SHELL := bash
 
-.PHONY: test package build clean
+.PHONY: test webui-check package build clean
 
 test:
 	bash ./scripts/test.sh
+
+webui-check:
+	bash ./scripts/check-webui.sh
 
 package:
 	@test -n "$(SOURCE_DIR)" || (echo "SOURCE_DIR wajib diisi" >&2; exit 2)
@@ -17,4 +20,3 @@ build:
 
 clean:
 	rm -rf -- dist
-

@@ -12,15 +12,16 @@ perubahan integrasi Telegram.
   commit tag release resmi `sipeed/picoclaw`.
 - Metadata `build-info.prop` di dalam ZIP mencatat tag upstream, commit
   upstream, commit fork, dan repository source kustom.
-- Pemeriksaan upstream otomatis sekali sehari pada pukul **02:17 UTC**
-  (10:17 WITA).
+- Pemeriksaan upstream otomatis sekali sehari pada pukul **00:00 UTC**
+  (08:00 WITA), sesuai jadwal workflow release.
 - Release ZIP modul dibuat otomatis hanya ketika versi upstream atau revisi
   modul berubah.
 - `picoclaw` dan `picoclaw-launcher` Android ARM64 dibangun dari source,
   termasuk frontend dashboard resmi yang di-embed ke launcher.
-- Resolver DNS native Android (Bionic/netd) digunakan oleh kedua binary agar
-  OAuth, provider, dan Skill Hub mengikuti koneksi jaringan Android tanpa
-  bergantung pada `/etc/resolv.conf`.
+- Pada Android, binary memakai resolver Go dengan fallback DNS ketika
+  `/etc/resolv.conf` tidak tersedia. Server DNS dapat diatur melalui
+  `PICOCLAW_DNS_SERVER` (format `host:port;host:port`); tanpa pengaturan ini
+  upstream memakai fallback publik `8.8.8.8:53;1.1.1.1:53`.
 - Patch kompatibilitas yang dilacak di repo mempertahankan mode launcher
   headless Android ketika cgo aktif; patch dilewati otomatis apabila struktur
   upstream sudah berubah.
@@ -95,6 +96,14 @@ launcher maupun metadata modul, sehingga tidak disarankan untuk instalasi ini.
 | `/data/adb/picoclaw/logs/launcher-module.log` | Log service launcher |
 | `$PREFIX/bin/picoclaw*` | Wrapper kecil saja, bukan binary PicoClaw |
 
+Backup/restore mengelola config, settings, workspace, credential PicoClaw,
+credential OAuth, konfigurasi/password dashboard, dan key SSH internal.
+PID, lock, log, serta file temporary tidak dipulihkan. Archive restore hanya
+menerima entry allowlist tanpa traversal atau symlink dan memakai rollback jika
+commit atau start ulang launcher gagal.
+Archive backup tidak dienkripsi; simpan dengan izin terbatas dan enkripsi
+sebelum menyalinnya ke lokasi atau perangkat lain.
+
 Data persisten sengaja tidak dihapus ketika modul di-uninstall. Hapus manual
 `/data/adb/picoclaw` hanya jika Anda memang ingin menghapus config, credential,
 workspace, dan log.
@@ -116,7 +125,8 @@ Workflow `Sync upstream release` melakukan alur berikut:
 Workflow pada fork PicoClaw (`As-tsaqib/picoclaw`) berjalan lebih dahulu setiap
 hari untuk menggabungkan release stabil terbaru dari `sipeed/picoclaw` ke branch
 kustom. Jika terjadi konflik, workflow berhenti agar perubahan tidak dibangun
-secara diam-diam. Workflow module berjalan 30 menit kemudian.
+secara diam-diam. Workflow module memeriksa source fork pada jadwalnya sendiri
+dan memverifikasi commit tersebut sebelum build.
 
 Workflow juga dapat dijalankan manual dari tab Actions. Naikkan angka dalam
 `MODULE_REVISION` bila kode modul berubah dan release untuk versi upstream yang
@@ -124,7 +134,7 @@ sama perlu dibuat ulang.
 
 ## Build lokal
 
-Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, pnpm, `make`, `zip`,
+Dependensi: Bash, Go sesuai `upstream/go.mod`, Node.js, npm/pnpm, `make`, `zip`,
 `file`, serta compiler ARM64 dari Android NDK. Di Termux compiler
 `aarch64-linux-android-clang` dideteksi otomatis. Pada host Linux lain, arahkan
 `PICOCLAW_ANDROID_CC` ke compiler NDK dan pilih API minimum dengan
@@ -137,8 +147,12 @@ PICOCLAW_ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarc
   make build SOURCE_DIR="$PWD/upstream" UPSTREAM_TAG=v0.3.1
 ```
 
-Artefak berada di `dist/`. Jalankan `make test` untuk pemeriksaan statis dan
-tes perakitan ZIP tanpa mengompilasi upstream.
+Artefak berada di `dist/`. Jalankan `make test` untuk pemeriksaan statis,
+tes perakitan ZIP, dan regression test backup/restore. Jalankan
+`make webui-check` untuk membangun frontend dari `webui/package-lock.json` dan
+memastikan `module/webroot/` sinkron. Build upstream menggunakan Git worktree
+sementara sehingga source checkout tetap bersih setelah patch Android dan
+kompilasi selesai.
 
 ## Lisensi
 

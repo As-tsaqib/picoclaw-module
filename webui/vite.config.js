@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../module/webroot',
+    outDir: process.env.PICOCLAW_WEBUI_OUT_DIR || '../module/webroot',
     emptyOutDir: true,
   }
 })

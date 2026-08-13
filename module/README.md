@@ -5,4 +5,5 @@ untuk mengelola launcher, atau akses dashboard PicoClaw di
 `http://127.0.0.1:18800`.
 
 Wrapper Termux dipasang otomatis bila Termux sudah terpasang. Tombol **Action**
-akan memasang ulang wrapper sekaligus menyalakan/mematikan launcher.
+menampilkan diagnostik dan menyinkronkan wrapper; lifecycle launcher dikelola
+melalui WebUI atau `picoclaw-ctl`.
