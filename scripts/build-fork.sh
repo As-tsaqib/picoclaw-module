@@ -29,7 +29,7 @@ require_command zip
 require_command file
 
 [[ -f $SOURCE_DIR/go.mod ]] || die "go.mod PicoClaw tidak ditemukan di $SOURCE_DIR"
-grep -qx 'module github.com/sipeed/picoclaw' "$SOURCE_DIR/go.mod" ||
+grep -qx "module $PICOCLAW_FORK_MODULE_PATH" "$SOURCE_DIR/go.mod" ||
   die "SOURCE_DIR bukan source tree PicoClaw fork"
 
 source_repository_url="${PICOCLAW_SOURCE_REPOSITORY_URL:-$PICOCLAW_FORK_URL}"

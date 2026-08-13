@@ -48,6 +48,8 @@ TEST_BUILT_SOURCE_REF="$(tr -d '[:space:]' < "$REPO_DIR/BUILT_SOURCE_REF")"
 validate_source_ref "$TEST_BUILT_SOURCE_REF"
 grep -Fq "PICOCLAW_FORK_URL='https://github.com/As-tsaqib/picoclaw'" \
   "$REPO_DIR/scripts/lib.sh"
+grep -Fq "PICOCLAW_FORK_MODULE_PATH='github.com/As-tsaqib/picoclaw'" \
+  "$REPO_DIR/scripts/lib.sh"
 # The expression below is a literal workflow-source assertion.
 # shellcheck disable=SC2016
 grep -Fq 'source_ref="$(tr -d '\''[:space:]'\'' < SOURCE_REF)"' \
@@ -70,6 +72,10 @@ grep -Fq 'VERSION="$binary_version"' "$REPO_DIR/scripts/build-fork.sh"
 # shellcheck disable=SC2016
 grep -Fq 'PICOCLAW_SOURCE_REPOSITORY_URL="$source_repository_url"' \
   "$REPO_DIR/scripts/build-fork.sh"
+# The dollar expression below is a literal source-code assertion.
+# shellcheck disable=SC2016
+grep -Fq 'grep -qx "module $PICOCLAW_FORK_MODULE_PATH" "$SOURCE_DIR/go.mod"' \
+  "$REPO_DIR/scripts/build-fork.sh"
 # shellcheck disable=SC2016
 grep -Fq 'git -C "$SOURCE_DIR" status --porcelain' \
   "$REPO_DIR/scripts/build-fork.sh"
@@ -79,6 +85,13 @@ grep -Fq 'git -C "$SOURCE_DIR" worktree add --detach "$BUILD_SOURCE_DIR" "$head_
 grep -Fq 'PICOCLAW_WEBUI_OUT_DIR' "$REPO_DIR/webui/vite.config.js"
 [[ -x $REPO_DIR/scripts/check-webui.sh ]]
 grep -Fq $'build\\tCGO_ENABLED=1' "$REPO_DIR/scripts/package-module.sh"
+grep -Fq 'github.com\/As-tsaqib\/picoclaw\/pkg\/config\.Version=' \
+  "$REPO_DIR/scripts/package-module.sh"
+if grep -Fq 'github.com\/sipeed\/picoclaw\/pkg\/config\.Version=' \
+  "$REPO_DIR/scripts/package-module.sh"; then
+  printf 'Parser metadata binary tidak boleh memakai module path lama.\n' >&2
+  exit 1
+fi
 # shellcheck disable=SC2016
 grep -Fq 'sourceRepo=$source_repository_url' "$REPO_DIR/scripts/package-module.sh"
 grep -Eq '^[0-9a-f]{40}$' "$REPO_DIR/BUILT_SOURCE_COMMIT"
