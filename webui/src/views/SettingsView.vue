@@ -5,9 +5,12 @@
       <!-- Boot Autostart Card -->
       <div class="bg-surface-container p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4">
-          <div>
-            <h3 class="text-sm font-medium">Jalankan Saat Boot</h3>
-            <p class="text-xs text-on-surface-variant mt-1">Jalankan launcher background HTTP otomatis saat perangkat Android dinyalakan.</p>
+          <div class="flex items-start gap-3">
+            <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+            <div>
+              <h3 class="text-sm font-medium">Jalankan Saat Boot</h3>
+              <p class="text-xs text-on-surface-variant mt-1">Jalankan launcher background HTTP otomatis saat perangkat Android dinyalakan.</p>
+            </div>
           </div>
           <ToggleSwitch
             :model-value="store.isAutostart"
@@ -21,11 +24,14 @@
       <!-- Network Port Settings Card -->
       <div class="bg-surface-container p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4">
-          <div>
-            <h3 class="text-sm font-medium">Port HTTP Launcher</h3>
-            <p class="text-xs text-on-surface-variant mt-1">
-              Port aktif: <span class="font-mono text-primary font-bold">{{ store.status.PORT }}</span> (listen 127.0.0.1)
-            </p>
+          <div class="flex items-start gap-3">
+            <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg></span>
+            <div>
+              <h3 class="text-sm font-medium">Port HTTP Launcher</h3>
+              <p class="text-xs text-on-surface-variant mt-1">
+                Port aktif: <span class="font-mono text-primary font-bold">{{ store.status.PORT }}</span> (listen 127.0.0.1)
+              </p>
+            </div>
           </div>
           <Ripple
             class="bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium px-4 py-2 rounded-lg shrink-0 cursor-pointer"
@@ -39,11 +45,14 @@
       <!-- Termux Integration Card -->
       <div class="bg-surface-container p-4 rounded-xl text-on-surface">
         <div class="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h3 class="text-sm font-medium">Integrasi Termux CLI</h3>
-            <p class="text-xs text-on-surface-variant mt-1">
-              Pasang wrapper CLI root di $PREFIX/bin Termux
-            </p>
+          <div class="flex items-start gap-3">
+            <span class="w-5 h-5 shrink-0 text-on-surface-variant mt-0.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg></span>
+            <div>
+              <h3 class="text-sm font-medium">Integrasi Termux CLI</h3>
+              <p class="text-xs text-on-surface-variant mt-1">
+                Pasang wrapper CLI root di $PREFIX/bin Termux
+              </p>
+            </div>
           </div>
           <span
             class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full shrink-0"

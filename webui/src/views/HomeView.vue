@@ -6,7 +6,8 @@
       <div class="bg-secondary-container mb-4 p-4 rounded-xl flex flex-col justify-between text-on-secondary-container">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0" :class="store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'">
-            <span class="text-2xl">{{ store.isRunning ? '🚀' : '⏸' }}</span>
+            <svg v-if="store.isRunning" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <svg v-else class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
           </div>
           <div class="flex-1 flex flex-col">
             <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>
@@ -48,7 +49,9 @@
           <h2 class="text-sm font-semibold mb-1">Buka Dashboard Web</h2>
           <p class="text-xs opacity-80">Akses antarmuka penuh PicoClaw di browser</p>
         </div>
-        <span class="text-xl">↗</span>
+        <span class="text-xl">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </span>
       </Ripple>
 
       <!-- Backup & Restore -->
@@ -60,7 +63,9 @@
             class="cursor-pointer bg-surface-container-high hover:bg-surface-container-highest p-3 rounded-lg flex flex-col gap-1 items-center justify-center"
             :class="{ 'opacity-50 pointer-events-none': store.busy }"
           >
-            <span class="text-xl">📁</span>
+            <span class="text-xl">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            </span>
             <span class="text-xs font-medium">Backup</span>
           </Ripple>
           <Ripple
@@ -68,7 +73,9 @@
             class="cursor-pointer bg-surface-container-high hover:bg-surface-container-highest p-3 rounded-lg flex flex-col gap-1 items-center justify-center"
             :class="{ 'opacity-50 pointer-events-none': store.busy }"
           >
-            <span class="text-xl">📥</span>
+            <span class="text-xl">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            </span>
             <span class="text-xs font-medium">Restore</span>
           </Ripple>
         </div>
