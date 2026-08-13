@@ -3,14 +3,18 @@
     <div class="max-w-3xl mx-auto p-5 py-1">
       
       <!-- Daemon Status -->
-      <div class="bg-secondary-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex items-center gap-4 text-on-secondary-container">
-        <Ripple
-          @click="store.executeAction(store.isRunning ? 'stop' : 'start')"
-          class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-colors duration-200"
-          :class="[
-            store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant',
-            { 'opacity-50 pointer-events-none': store.busy }
-          ]"
+      <Ripple
+        @click="toggleLauncher"
+        :tabindex="store.busy ? -1 : 0"
+        :aria-label="store.isRunning ? 'Hentikan dashboard' : 'Mulai dashboard'"
+        :aria-pressed="store.isRunning"
+        class="w-full bg-secondary-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex items-center gap-4 text-on-secondary-container text-left cursor-pointer"
+        :class="{ 'opacity-50 pointer-events-none': store.busy }"
+      >
+        <span
+          class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200"
+          :class="store.isRunning ? 'bg-primary text-on-primary' : 'bg-surface-variant text-on-surface-variant'"
+          aria-hidden="true"
         >
           <Transition name="status-icon" mode="out-in">
             <!-- Play icon (saat berhenti) -->
@@ -18,12 +22,12 @@
             <!-- Stop icon (saat aktif) -->
             <svg v-else key="stop" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="12" height="14" rx="1"></rect></svg>
           </Transition>
-        </Ripple>
+        </span>
         <div class="flex-1 flex flex-col">
           <span class="text-lg font-semibold">{{ store.isRunning ? 'Dashboard Aktif' : 'Dashboard Berhenti' }}</span>
           <span class="text-xs pt-1 block opacity-80">{{ store.isRunning ? `PID ${store.status.PID} · Port ${store.status.PORT}` : 'Ketuk tombol untuk memulai.' }}</span>
         </div>
-      </div>
+      </Ripple>
 
       <!-- Main Action (Open Dashboard) -->
       <Ripple
@@ -137,6 +141,16 @@ function handlePickerSelection(selectedPath) {
     store.executeAction('backup', dest);
   } else if (pickerMode.value === 'file') {
     store.executeAction('restore', selectedPath);
+  }
+}
+
+async function toggleLauncher() {
+  if (store.busy) return;
+
+  try {
+    await store.executeAction(store.isRunning ? 'stop' : 'start');
+  } catch {
+    // The store exposes the action error to the user.
   }
 }
 
