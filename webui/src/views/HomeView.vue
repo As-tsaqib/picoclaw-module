@@ -118,10 +118,10 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
+        <div class="flex-1 overflow-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono" ref="logContainer">
           <table v-if="filteredLogLines.length" class="text-[10px] font-mono border-collapse border-spacing-0 w-max">
-            <tr v-for="(line, i) in filteredLogLines" :key="i" class="leading-relaxed hover:bg-on-surface/5" :class="logLineClass(line)">
-              <td class="opacity-50 select-none text-right align-top pr-3 border-none whitespace-nowrap">{{ i + 1 }}</td>
+            <tr v-for="(line, i) in filteredLogLines" :key="i" class="leading-[1.4] hover:bg-on-surface/5" :class="logLineClass(line)">
+              <td class="opacity-50 select-none text-right align-top pr-3 min-w-[24px] border-none whitespace-nowrap">{{ i + 1 }}</td>
               <td class="whitespace-pre align-top border-none">{{ line }}</td>
             </tr>
           </table>
