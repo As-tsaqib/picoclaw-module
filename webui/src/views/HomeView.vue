@@ -120,7 +120,7 @@
         />
         <div class="flex-1 overflow-y-auto bg-surface-container-low border border-outline-variant/30 rounded-lg p-3 text-[10px] font-mono scrollbar-hidden" ref="logContainer">
           <template v-if="filteredLogLines.length">
-            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed break-all" :class="logLineClass(line)">
+            <div v-for="(line, i) in filteredLogLines" :key="i" class="mb-1 leading-relaxed break-words whitespace-pre-wrap" :class="logLineClass(line)">
               <span class="opacity-50 select-none mr-2">{{ i + 1 }}</span>
               {{ line }}
             </div>
@@ -196,7 +196,7 @@ const filteredLogLines = computed(() => {
   if (!store.logs) return [];
   // Strip ANSI escape codes first
   const cleanLogs = store.logs.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
-  const lines = cleanLogs.split('\n').filter((l) => l.trim());
+  const lines = cleanLogs.split('\n').map((l) => l.trim()).filter(Boolean);
   if (!logSearch.value.trim()) return lines;
   const q = logSearch.value.toLowerCase();
   return lines.filter((l) => l.toLowerCase().includes(q));

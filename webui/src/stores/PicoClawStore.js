@@ -24,6 +24,21 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
   const busy = ref(false);
   const toastMessage = ref('');
   const errorMessage = ref('');
+  
+  let toastTimeout = null;
+  let errorTimeout = null;
+
+  function setToast(msg) {
+    toastMessage.value = msg;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    if (msg) toastTimeout = setTimeout(() => toastMessage.value = '', 4000);
+  }
+
+  function setError(msg) {
+    errorMessage.value = msg;
+    if (errorTimeout) clearTimeout(errorTimeout);
+    if (msg) errorTimeout = setTimeout(() => errorMessage.value = '', 4000);
+  }
 
   const isRunning = computed(() => status.value.RUNNING === '1');
   const isAutostart = computed(() => status.value.AUTOSTART === '1');
@@ -61,14 +76,14 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
       status.value = parseStatusOutput(statusRaw);
       logs.value = logRaw || 'No logs available.';
     } catch (err) {
-      if (!quiet) errorMessage.value = err.message;
+      if (!quiet) setError(err.message);
     }
   }
 
   async function executeAction(action, ...args) {
     busy.value = true;
-    errorMessage.value = '';
-    toastMessage.value = '';
+    setToast('');
+    setError('');
     try {
       let output = '';
       switch (action) {
@@ -101,12 +116,12 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
       await refresh({ quiet: true });
       if (output) {
         const lastLine = output.split('\n').at(-1);
-        toastMessage.value = lastLine;
+        setToast(lastLine);
         KSU.toast(lastLine);
       }
       return output;
     } catch (err) {
-      errorMessage.value = err.message;
+      setError(err.message);
       throw err;
     } finally {
       busy.value = false;
