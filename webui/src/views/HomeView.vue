@@ -118,8 +118,8 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4] font-mono text-[10px]" ref="logContainer">
-          <pre v-if="filteredLogText" class="p-3 whitespace-pre m-0" style="line-height: 1.2; letter-spacing: 0; font-family: 'Roboto Mono', 'Droid Sans Mono', monospace;" v-html="filteredLogText"></pre>
+        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4] font-mono text-[12px]" ref="logContainer">
+          <pre v-if="filteredLogText" class="p-3 whitespace-pre m-0" style="line-height: 1.2; letter-spacing: 0; font-family: 'Roboto Mono', 'Droid Sans Mono', 'Courier New', monospace; text-rendering: geometricPrecision; font-variant-ligatures: none; width: max-content; min-width: 100%;" v-html="filteredLogText"></pre>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
       </div>
