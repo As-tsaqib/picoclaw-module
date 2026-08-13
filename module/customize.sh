@@ -9,7 +9,7 @@ case "$ARCH" in
     ui_print '- ABI: arm64 (didukung)'
     ;;
   *)
-    abort "! ABI $ARCH tidak didukung; upstream hanya menyediakan target Android ARM64."
+    abort "! ABI $ARCH tidak didukung; module ini hanya menyediakan target Android ARM64."
     ;;
 esac
 

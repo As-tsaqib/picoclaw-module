@@ -162,5 +162,5 @@ saat build. Keduanya sengaja ditampilkan terpisah.
 
 ## Lisensi
 
-Kode modul menggunakan lisensi MIT. PicoClaw juga berlisensi MIT; lisensi
-upstream selalu disertakan di dalam ZIP. Lihat [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Kode modul menggunakan lisensi MIT. PicoClaw juga berlisensi MIT; lisensi source
+fork selalu disertakan di dalam ZIP. Lihat [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

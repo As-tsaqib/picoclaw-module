@@ -61,7 +61,7 @@ validate_elf_arm64() {
   require_command go
   build_metadata="$(go version -m "$binary")"
   observed_binary_version="$(sed -n \
-    's/.*github.com\/sipeed\/picoclaw\/pkg\/config\.Version=\([^"[:space:]]*\).*/\1/p' \
+    's/.*github.com\/As-tsaqib\/picoclaw\/pkg\/config\.Version=\([^"[:space:]]*\).*/\1/p' \
     <<< "$build_metadata" | head -n 1)"
   [[ -n $observed_binary_version ]] ||
     die "$binary tidak memuat metadata versi binary"
