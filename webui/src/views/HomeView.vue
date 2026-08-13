@@ -118,8 +118,8 @@
           placeholder="Filter logs..."
           class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
         />
-        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4] font-mono text-[12px]" ref="logContainer">
-          <pre v-if="filteredLogText" class="p-3 whitespace-pre m-0" style="line-height: 1.2; letter-spacing: 0; font-family: 'Roboto Mono', 'Droid Sans Mono', 'Courier New', monospace; text-rendering: geometricPrecision; font-variant-ligatures: none; width: max-content; min-width: 100%;" v-html="filteredLogText"></pre>
+        <div class="flex-1 overflow-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
+          <pre v-if="filteredLogText" class="p-3 m-0" style="white-space: pre; overflow: visible; line-height: 1.15; letter-spacing: 0; font-size: 11px; font-family: 'Courier New', Courier, monospace; -webkit-font-smoothing: none; text-rendering: optimizeSpeed; width: max-content; min-width: 100%; tab-size: 8;">{{ filteredLogText }}</pre>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
       </div>
@@ -187,55 +187,19 @@ async function openDashboard() {
 const logSearch = ref('');
 const logContainer = ref(null);
 
-function ansiToHtml(text) {
-  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  let openSpans = 0;
-  
-  html = html.replace(/\x1B\[([0-9;]*)m/g, (match, p1) => {
-    if (p1 === '0' || p1 === '') {
-      let res = '</span>'.repeat(openSpans);
-      openSpans = 0;
-      return res;
-    }
-    let style = '';
-    for (let c of p1.split(';')) {
-      if (c === '1') style += 'font-weight: bold;';
-      else if (c === '31') style += 'color: #ff5555;';
-      else if (c === '32') style += 'color: #50fa7b;';
-      else if (c === '33') style += 'color: #f1fa8c;';
-      else if (c === '34') style += 'color: #bd93f9;';
-      else if (c === '35') style += 'color: #ff79c6;';
-      else if (c === '36') style += 'color: #8be9fd;';
-      else if (c === '37') style += 'color: #f8f8f2;';
-      else if (c === '90') style += 'color: #6272a4;';
-      else if (c === '91') style += 'color: #ff6e6e;';
-      else if (c === '92') style += 'color: #69ff94;';
-      else if (c === '93') style += 'color: #ffffa5;';
-      else if (c === '94') style += 'color: #d6acff;';
-      else if (c === '95') style += 'color: #ff92df;';
-      else if (c === '96') style += 'color: #a4ffff;';
-      else if (c === '97') style += 'color: #ffffff;';
-    }
-    if (style) {
-      openSpans++;
-      return `<span style="${style}">`;
-    }
-    return '';
-  });
-  
-  html += '</span>'.repeat(openSpans);
-  return html.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, ''); // Strip remaining non-color ANSI codes
-}
-
 const filteredLogText = computed(() => {
   if (!store.logs) return '';
-  const cleanLogs = store.logs.replace(/\r/g, '');
-  if (!logSearch.value.trim()) return ansiToHtml(cleanLogs.trim());
+  // Strip ALL ANSI escape codes and carriage returns completely
+  const cleanLogs = store.logs
+    .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\x1B\][^\x07]*\x07/g, '')
+    .replace(/\x1B[()][AB012]/g, '')
+    .replace(/\r/g, '');
+  if (!logSearch.value.trim()) return cleanLogs.trim();
   
   const q = logSearch.value.toLowerCase();
   const lines = cleanLogs.split('\n');
-  const filtered = lines.filter((l) => l.toLowerCase().includes(q)).join('\n').trim();
-  return ansiToHtml(filtered);
+  return lines.filter((l) => l.toLowerCase().includes(q)).join('\n').trim();
 });
 
 function scrollLogBottom() {
