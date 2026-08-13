@@ -1,6 +1,7 @@
 <template>
   <div id="app" class="min-h-screen flex flex-col bg-background text-on-background overflow-hidden">
     <header 
+      v-if="route.name !== 'dashboard'"
       class="sticky top-0 z-10 bg-background border-b border-surface-container"
       :style="{ paddingTop: 'var(--window-inset-top, env(safe-area-inset-top, 0px))' }"
     >
@@ -31,7 +32,7 @@
       <router-view />
     </main>
 
-    <Navigation />
+    <Navigation v-if="route.name !== 'dashboard'" />
   </div>
 </template>
 
@@ -41,6 +42,9 @@ import { usePicoClawStore } from '@/stores/PicoClawStore';
 import { logoBase64 } from '@/assets/logo-b64.js';
 import Navigation from '@/components/ui/Navigation.vue';
 
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 const store = usePicoClawStore();
 let intervalId = null;
 

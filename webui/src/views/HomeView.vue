@@ -104,10 +104,12 @@
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePicoClawStore } from '@/stores/PicoClawStore';
 import FilePickerModal from '@/components/ui/FilePickerModal.vue';
 import Ripple from '@/components/ui/Ripple.vue';
 
+const router = useRouter();
 const store = usePicoClawStore();
 
 const showFilePicker = ref(false);
@@ -139,6 +141,6 @@ async function openDashboard() {
     await new Promise((res) => setTimeout(res, 600));
   }
   const url = await store.control('url');
-  window.location.assign(url);
+  router.push({ name: 'dashboard', query: { url } });
 }
 </script>
