@@ -126,7 +126,7 @@ listener_is_active() {
   [ -n "$listener_hex" ] || return 1
   for listener_table in /proc/net/tcp /proc/net/tcp6; do
     [ -r "$listener_table" ] || continue
-    if grep -Eq "^[[:space:]]*[0-9]+:[^[:space:]]+:${listener_hex}[[:space:]]+[^[:space:]]+[[:space:]]+0A([[:space:]]|$)" "$listener_table" 2>/dev/null; then
+    if grep -Eq "^[[:space:]]*[0-9]+:[^[:space:]]+:$listener_hex[[:space:]]+[^[:space:]]+[[:space:]]+0A([[:space:]]|$)" "$listener_table" 2>/dev/null; then
       return 0
     fi
   done
@@ -189,17 +189,16 @@ uptime_seconds() {
   fi
   uptime_start=$(read_private_value "$PICO_ACTIVE_START_TIME_FILE")
   uptime_now=$(current_epoch)
-  case "$uptime_start" in
-    ''|*[!0-9]*) printf '0\n'; return 0 ;;
+  case "$uptime_start:$uptime_now" in
+    ''|*[!0-9:]*|*:*:*) printf '0\n' ;;
+    *)
+      if [ "$uptime_start" -le "$uptime_now" ]; then
+        printf '%s\n' $((uptime_now - uptime_start))
+      else
+        printf '0\n'
+      fi
+      ;;
   esac
-  case "$uptime_now" in
-    ''|*[!0-9]*) printf '0\n'; return 0 ;;
-  esac
-  if [ "$uptime_start" -le "$uptime_now" ]; then
-    printf '%s\n' $((uptime_now - uptime_start))
-  else
-    printf '0\n'
-  fi
 }
 
 watchdog_health_status() {
@@ -442,7 +441,7 @@ launcher_restart() {
   if ! launcher_lock_acquire restart; then
     return 1
   fi
-  launcher_restart_unlocked 'manual restart'
+  launcher_restart_unlocked
   launcher_result=$?
   launcher_lock_release
   return "$launcher_result"
