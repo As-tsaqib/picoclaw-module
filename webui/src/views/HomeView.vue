@@ -71,86 +71,30 @@
         </div>
       </div>
 
-      <!-- Health & Diagnostics -->
-      <div class="bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl text-on-surface">
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <div>
-            <h3 class="text-sm font-medium">Health &amp; Diagnostics</h3>
-            <p class="text-xs text-on-surface-variant mt-1">Status launcher dan pemeriksaan runtime tanpa credential.</p>
-          </div>
-          <span
-            class="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded-full border"
-            :class="diagnosticStatusClass(store.status.HTTP_STATUS)"
-          >
-            HTTP {{ store.status.HTTP_STATUS || 'down' }}
-          </span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-          <div class="diagnostic-cell"><span>PID</span><strong>{{ store.status.PID || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Uptime</span><strong>{{ formatUptime(store.status.UPTIME_SECONDS) }}</strong></div>
-          <div class="diagnostic-cell"><span>Last start</span><strong>{{ formatEpoch(store.status.LAST_START_TIME_EPOCH || store.status.START_TIME_EPOCH) }}</strong></div>
-          <div class="diagnostic-cell"><span>Watchdog</span><strong :class="diagnosticTextClass(store.status.WATCHDOG_STATUS === 'enabled')">{{ store.status.WATCHDOG_STATUS || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Binary</span><strong :class="diagnosticTextClass(store.status.BINARY_STATUS === 'ok')">{{ store.status.BINARY_STATUS || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Permission</span><strong :class="diagnosticTextClass(store.status.PERMISSION_STATUS === 'ok')">{{ store.status.PERMISSION_STATUS || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Config</span><strong :class="diagnosticTextClass(store.status.CONFIG_STATUS === 'ok')">{{ store.status.CONFIG_STATUS || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Listener</span><strong :class="diagnosticTextClass(store.status.LISTENER_STATUS === 'ok')">{{ store.status.LISTENER_STATUS || '—' }}</strong></div>
-          <div class="diagnostic-cell"><span>Wrapper</span><strong :class="diagnosticTextClass(store.status.WRAPPER_STATUS === 'ready')">{{ store.status.WRAPPER_STATUS || '—' }}</strong></div>
-        </div>
-        <p v-if="store.status.LAST_RESTART_REASON && store.status.LAST_RESTART_REASON !== 'none'" class="text-[11px] text-on-surface-variant mt-3">
-          Restart terakhir: {{ store.status.LAST_RESTART_REASON }} · {{ formatEpoch(store.status.LAST_RESTART_TIME_EPOCH) }}
-        </p>
-        <Ripple
-          class="mt-3 w-full sm:w-auto bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium px-4 py-2 rounded-lg cursor-pointer text-center"
-          @click="copyDiagnosticReport"
-        >
-          Salin laporan diagnostik
-        </Ripple>
-      </div>
-
 
       <!-- Logs -->
       <div class="service-logs-card bg-surface-container border border-outline-variant/30 mb-4 p-4 rounded-xl flex flex-col overflow-hidden text-on-surface">
         <div class="flex flex-wrap gap-2 justify-between items-center mb-3">
           <h3 class="text-sm font-medium">Service Logs</h3>
-          <div class="flex flex-wrap items-center justify-end gap-2">
+          <div class="flex items-center gap-2">
             <select v-model="store.logLines" @change="store.refresh()" class="bg-surface-container-high border-none text-xs rounded-md px-2 py-1 outline-none text-on-surface">
               <option value="50">50 Baris</option>
               <option value="100">100 Baris</option>
               <option value="300">300 Baris</option>
             </select>
-            <select v-model="logLevel" class="bg-surface-container-high border-none text-xs rounded-md px-2 py-1 outline-none text-on-surface" aria-label="Filter level log">
-              <option value="all">Semua level</option>
-              <option value="error">Error</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
-            </select>
-            <Ripple @click="toggleLogTail" class="cursor-pointer bg-surface-container-high text-on-surface px-3 py-1 rounded-md text-xs font-medium">
-              {{ logPaused ? 'Live tail' : 'Pause' }}
-            </Ripple>
-            <Ripple @click="downloadLogs" class="cursor-pointer bg-surface-container-high text-on-surface px-3 py-1 rounded-md text-xs font-medium">
-              Export
-            </Ripple>
-            <Ripple @click="confirmClearLogs" class="cursor-pointer bg-error/20 text-error px-3 py-1 rounded-md text-xs font-medium">
+            <Ripple @click="store.executeAction('clear-logs')" class="cursor-pointer bg-error/20 text-error px-3 py-1 rounded-md text-xs font-medium">
               Clear
             </Ripple>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2 mb-3">
-          <input
-            v-model="logSearch"
-            type="text"
-            placeholder="Filter logs..."
-            class="flex-1 min-w-[10rem] bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary text-on-surface"
-          />
-          <label class="log-option"><input v-model="wrapText" type="checkbox" /> Wrap text</label>
-          <label class="log-option"><input v-model="rawLog" type="checkbox" /> Raw log</label>
-        </div>
-        <div class="flex-1 min-h-0 overflow-y-auto bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" :class="{ 'overflow-x-auto': rawLog }" ref="logContainer">
-          <div v-if="filteredLogEntries.length" class="log-output p-3" :class="{ 'log-output-wrap': wrapText, 'log-output-raw': rawLog }">
-            <div v-for="entry in filteredLogEntries" :key="entry.key" class="log-entry" :class="entry.levelClass">
-              <span class="log-line-number">{{ entry.number }}</span><span v-if="entry.timestamp" class="log-timestamp">{{ entry.timestamp }}</span><span class="log-entry-text">{{ entry.text }}</span>
-            </div>
-          </div>
+        <input
+          v-model="logSearch"
+          type="text"
+          placeholder="Filter logs..."
+          class="bg-surface-container-high border border-outline-variant/30 text-xs px-3 py-2 rounded-lg outline-none focus:border-primary w-full mb-3 text-on-surface"
+        />
+        <div class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-[#1e1e1e] border border-outline-variant/30 rounded-lg text-[#d4d4d4]" ref="logContainer">
+          <pre v-if="filteredLogText" class="log-output p-3 m-0">{{ filteredLogText }}</pre>
           <div v-else class="text-on-surface-variant flex h-full items-center justify-center italic">Tidak ada log.</div>
         </div>
       </div>
@@ -169,11 +113,13 @@
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePicoClawStore } from '@/stores/PicoClawStore';
 import * as KSU from '@/helpers/KernelSU';
 import FilePickerModal from '@/components/ui/FilePickerModal.vue';
 import Ripple from '@/components/ui/Ripple.vue';
 
+const router = useRouter();
 const store = usePicoClawStore();
 
 const showFilePicker = ref(false);
@@ -222,140 +168,24 @@ async function openDashboard() {
   }
 }
 
-// Health & diagnostics and log viewer helpers deliberately use whitelisted
-// status fields. The report never includes config contents, credentials, or
-// raw logs.
-const diagnosticFields = [
-  ['HTTP status', 'HTTP_STATUS'], ['PID', 'PID'], ['Uptime seconds', 'UPTIME_SECONDS'],
-  ['Last start (epoch)', 'LAST_START_TIME_EPOCH'], ['Watchdog', 'WATCHDOG_STATUS'],
-  ['Last restart reason', 'LAST_RESTART_REASON'], ['Last restart (epoch)', 'LAST_RESTART_TIME_EPOCH'],
-  ['Binary', 'BINARY_STATUS'], ['Permission', 'PERMISSION_STATUS'], ['Config', 'CONFIG_STATUS'],
-  ['Listener', 'LISTENER_STATUS'], ['Wrapper', 'WRAPPER_STATUS'], ['Port', 'PORT'],
-];
-
-function diagnosticStatusClass(value) {
-  return value === 'ok' ? 'bg-primary/20 text-primary border-primary/30' : 'bg-error/20 text-error border-error/30';
-}
-
-function diagnosticTextClass(ok) {
-  return ok ? 'text-primary' : 'text-error';
-}
-
-function formatUptime(value) {
-  const seconds = Number(value);
-  if (!Number.isFinite(seconds) || seconds < 1) return '—';
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${days ? `${days}d ` : ''}${hours ? `${hours}h ` : ''}${minutes ? `${minutes}m ` : ''}${secs}s`.trim();
-}
-
-function formatEpoch(value) {
-  const epoch = Number(value);
-  if (!Number.isFinite(epoch) || epoch <= 0) return '—';
-  try { return new Date(epoch * 1000).toLocaleString(); } catch { return '—'; }
-}
-
-async function copyDiagnosticReport() {
-  const report = diagnosticFields
-    .map(([label, key]) => `${label}: ${store.status[key] || '—'}`)
-    .join('\n');
-  try {
-    await navigator.clipboard.writeText(`PicoClaw diagnostics\n${report}`);
-    store.setToast?.('Laporan diagnostik disalin');
-    if (!store.setToast) store.toastMessage = 'Laporan diagnostik disalin';
-  } catch {
-    store.toastMessage = 'Clipboard tidak tersedia';
-    KSU.toast('Clipboard tidak tersedia');
-  }
-}
-
+// Log Viewer Logic
 const logSearch = ref('');
-const logLevel = ref('all');
-const logPaused = ref(false);
-const pausedLogs = ref('');
-const wrapText = ref(true);
-const rawLog = ref(false);
 const logContainer = ref(null);
 
-function redactLogText(value) {
-  return String(value || '')
-    .replace(/(authorization\s*:\s*bearer\s+)[^\s]+/gi, '$1[REDACTED]')
-    .replace(/(bearer\s+)[A-Za-z0-9._~+\/-]{8,}/gi, '$1[REDACTED]')
-    .replace(/((?:api[_-]?key|token|password|passwd|secret|cookie)\s*[:=]\s*)[^\s]+/gi, '$1[REDACTED]')
-    .replace(/\b(?:sk|gh[pousr])_[A-Za-z0-9_-]{8,}\b/g, '[REDACTED]');
-}
-
-function cleanLogLine(value) {
-  const redacted = redactLogText(value).replace(/\r/g, '');
-  if (rawLog.value) return redacted;
-  return redacted
+const filteredLogText = computed(() => {
+  if (!store.logs) return '';
+  // Strip ALL ANSI escape codes and carriage returns completely
+  const cleanLogs = store.logs
     .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
     .replace(/\x1B\][^\x07]*\x07/g, '')
-    .replace(/\x1B[()][AB012]/g, '');
-}
-
-function classifyLogLevel(line) {
-  const lower = line.toLowerCase();
-  if (/\b(error|err|fatal|panic|gagal|failed|failure)\b/.test(lower)) return 'error';
-  if (/\b(warn|warning|wrn|peringatan)\b/.test(lower)) return 'warning';
-  return 'info';
-}
-
-function extractTimestamp(line) {
-  const match = line.match(/^\s*(\[?\d{4}-\d{2}-\d{2}[ t]\d{2}:\d{2}:\d{2}(?:\.\d+)?\]?|\[?\d{2}:\d{2}:\d{2}(?:\.\d+)?\]?)/i);
-  return match ? match[1] : '';
-}
-
-const displayedLogs = computed(() => logPaused.value ? pausedLogs.value : store.logs);
-const filteredLogEntries = computed(() => {
-  const query = logSearch.value.trim().toLowerCase();
-  return String(displayedLogs.value || '').split('\n')
-    .map((line, index) => ({ line: cleanLogLine(line), number: index + 1 }))
-    .filter(({ line }) => line.length > 0)
-    .map(({ line, number }) => {
-      const level = classifyLogLevel(line);
-      const timestamp = extractTimestamp(line);
-      return {
-        key: `${number}:${line}`,
-        number,
-        timestamp,
-        text: rawLog.value || !timestamp ? line : line.slice(timestamp.length).trimStart(),
-        level,
-        levelClass: `log-${level}`,
-      };
-    })
-    .filter((entry) => (logLevel.value === 'all' || entry.level === logLevel.value) &&
-      (!query || entry.text.toLowerCase().includes(query)));
+    .replace(/\x1B[()][AB012]/g, '')
+    .replace(/\r/g, '');
+  if (!logSearch.value.trim()) return cleanLogs.trim();
+  
+  const q = logSearch.value.toLowerCase();
+  const lines = cleanLogs.split('\n');
+  return lines.filter((l) => l.toLowerCase().includes(q)).join('\n').trim();
 });
-
-function toggleLogTail() {
-  if (!logPaused.value) {
-    pausedLogs.value = store.logs;
-    logPaused.value = true;
-  } else {
-    logPaused.value = false;
-    scrollLogBottom();
-  }
-}
-
-function confirmClearLogs() {
-  if (window.confirm('Bersihkan service log? Tindakan ini tidak dapat dibatalkan.')) {
-    store.executeAction('clear-logs');
-  }
-}
-
-function downloadLogs() {
-  const content = filteredLogEntries.value.map((entry) => `${String(entry.number).padStart(5, ' ')} ${entry.text}`).join('\n');
-  const blob = new Blob([`${content}\n`], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `picoclaw-log-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
 
 function scrollLogBottom() {
   nextTick(() => {
@@ -363,8 +193,6 @@ function scrollLogBottom() {
   });
 }
 
-watch(() => store.logs, () => {
-  if (!logPaused.value) scrollLogBottom();
-});
+watch(() => store.logs, scrollLogBottom);
 onMounted(scrollLogBottom);
 </script>

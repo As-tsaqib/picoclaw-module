@@ -417,25 +417,6 @@ show_status() {
   status_port=$(launcher_port)
   status_host=$(launcher_host)
   status_wrappers=$(termux_wrappers_status)
-  status_http=$(http_health_status)
-  status_uptime=$(uptime_seconds)
-  status_start_time=$(read_private_value "$PICO_ACTIVE_START_TIME_FILE")
-  status_last_start_time=$(read_private_value "$PICO_LAST_START_TIME_FILE")
-  status_watchdog=$(watchdog_health_status)
-  status_last_restart_reason=$(last_restart_reason)
-  status_last_restart_time=$(read_private_value "$PICO_LAST_RESTART_TIME_FILE")
-  status_binary=$(binary_health_status)
-  status_permission=$(permission_health_status)
-  status_config=$(config_health_status)
-  if listener_is_active "$status_port"; then
-    status_listener=ok
-  else
-    status_listener=down
-  fi
-  case "$status_wrappers" in
-    ready) status_wrapper_health=ready ;;
-    *) status_wrapper_health=missing ;;
-  esac
   status_module_version=$(sed -n 's/^version=//p' "$MODDIR/module.prop" | head -n 1)
   status_binary_version=$(sed -n 's/^binaryVersion=//p' "$MODDIR/build-info.prop" 2>/dev/null | head -n 1)
   if [ -z "$status_binary_version" ]; then
@@ -451,18 +432,6 @@ show_status() {
   printf 'HOST=%s\n' "$status_host"
   printf 'PORT=%s\n' "$status_port"
   printf 'URL=http://127.0.0.1:%s\n' "$status_port"
-  printf 'HTTP_STATUS=%s\n' "$status_http"
-  printf 'UPTIME_SECONDS=%s\n' "$status_uptime"
-  printf 'START_TIME_EPOCH=%s\n' "${status_start_time:-}"
-  printf 'LAST_START_TIME_EPOCH=%s\n' "${status_last_start_time:-}"
-  printf 'WATCHDOG_STATUS=%s\n' "$status_watchdog"
-  printf 'LAST_RESTART_REASON=%s\n' "${status_last_restart_reason:-none}"
-  printf 'LAST_RESTART_TIME_EPOCH=%s\n' "${status_last_restart_time:-}"
-  printf 'BINARY_STATUS=%s\n' "$status_binary"
-  printf 'PERMISSION_STATUS=%s\n' "$status_permission"
-  printf 'CONFIG_STATUS=%s\n' "$status_config"
-  printf 'LISTENER_STATUS=%s\n' "$status_listener"
-  printf 'WRAPPER_STATUS=%s\n' "$status_wrapper_health"
   printf 'WRAPPERS=%s\n' "$status_wrappers"
   # VERSION is retained for older WebUI clients; new clients use the explicit fields.
   printf 'VERSION=%s\n' "$status_module_version"
@@ -475,7 +444,7 @@ show_status() {
 }
 
 usage() {
-  printf '%s\n' 'Usage: picoclaw-ctl {status|diagnostics|start|stop|restart|toggle|autostart|port|backup|restore|wrappers|logs|url}'
+  printf '%s\n' 'Usage: picoclaw-ctl {status|start|stop|restart|toggle|autostart|port|backup|restore|wrappers|logs|url}'
   printf '%s\n' '  autostart on|off'
   printf '%s\n' '  port [nomor-port]'
   printf '%s\n' '  backup [file-tujuan.tar.gz]'
@@ -487,9 +456,6 @@ usage() {
 control_command=${1:-status}
 case "$control_command" in
   status)
-    show_status
-    ;;
-  diagnostics)
     show_status
     ;;
   start)
@@ -534,7 +500,7 @@ case "$control_command" in
         launcher_lock_release
         exit 1
       fi
-      if launcher_is_running && ! launcher_restart_unlocked 'port changed'; then
+      if launcher_is_running && ! launcher_restart_unlocked; then
         write_setting_unlocked PORT "$old_port" || true
         launcher_start_unlocked >/dev/null 2>&1 || true
         launcher_lock_release
@@ -594,7 +560,7 @@ case "$control_command" in
             ;;
           esac
         if [ -f "$PICO_LOG" ]; then
-          tail -n "$log_lines" "$PICO_LOG" | redact_log_stream
+          tail -n "$log_lines" "$PICO_LOG"
         else
           printf 'Log belum tersedia.\n'
         fi

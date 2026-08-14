@@ -53,7 +53,7 @@ echo "• Data Dir   : /data/adb/picoclaw"
 echo
 echo "[RECENT LOGS]"
 if [ -f "$PICO_LOG" ]; then
-  last_log=$(tail -n 3 "$PICO_LOG" 2>/dev/null | redact_log_stream | sed 's/^/  /')
+  last_log=$(tail -n 3 "$PICO_LOG" 2>/dev/null | sed 's/^/  /')
   if [ -n "$last_log" ]; then
     echo "$last_log"
   else
