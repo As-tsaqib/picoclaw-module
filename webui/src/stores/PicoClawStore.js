@@ -12,6 +12,18 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
     HOST: '127.0.0.1',
     PORT: '18800',
     URL: 'http://127.0.0.1:18800',
+    HTTP_STATUS: 'down',
+    UPTIME_SECONDS: '0',
+    START_TIME_EPOCH: '',
+    LAST_START_TIME_EPOCH: '',
+    WATCHDOG_STATUS: 'disabled',
+    LAST_RESTART_REASON: 'none',
+    LAST_RESTART_TIME_EPOCH: '',
+    BINARY_STATUS: '—',
+    PERMISSION_STATUS: '—',
+    CONFIG_STATUS: '—',
+    LISTENER_STATUS: '—',
+    WRAPPER_STATUS: '—',
     WRAPPERS: '—',
     VERSION: '—',
     MODULE_VERSION: '—',
@@ -76,7 +88,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
         control('status'),
         control('logs', logLines.value),
       ]);
-      status.value = parseStatusOutput(statusRaw);
+      status.value = { ...status.value, ...parseStatusOutput(statusRaw) };
       logs.value = logRaw || 'No logs available.';
     } catch (err) {
       if (!quiet) setError(err.message);
@@ -138,6 +150,7 @@ export const usePicoClawStore = defineStore('picoclaw', () => {
     busy,
     toastMessage,
     errorMessage,
+    setToast,
     isRunning,
     isAutostart,
     control,

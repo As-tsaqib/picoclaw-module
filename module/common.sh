@@ -12,6 +12,10 @@ PICO_RUN_DIR=$PICO_DATA_DIR/run
 PICO_LOG_DIR=$PICO_DATA_DIR/logs
 PICO_LOG=$PICO_LOG_DIR/launcher-module.log
 PICO_PID_FILE=$PICO_RUN_DIR/launcher.pid
+PICO_ACTIVE_START_TIME_FILE=$PICO_RUN_DIR/launcher.started_at
+PICO_LAST_START_TIME_FILE=$PICO_RUN_DIR/launcher.last_started_at
+PICO_LAST_RESTART_REASON_FILE=$PICO_RUN_DIR/launcher.last_restart_reason
+PICO_LAST_RESTART_TIME_FILE=$PICO_RUN_DIR/launcher.last_restart_at
 PICO_MANUAL_STOP=$PICO_RUN_DIR/manual_stop
 PICO_LOCK_DIR=$PICO_RUN_DIR/launcher.lock
 PICO_LOCK_PID_FILE=$PICO_LOCK_DIR/pid
@@ -81,6 +85,151 @@ launcher_port_is_safe() {
       ;;
   esac
   return 0
+}
+
+current_epoch() {
+  date '+%s' 2>/dev/null || printf '0\n'
+}
+
+read_private_value() {
+  [ -f "$1" ] || return 0
+  sed -n '1p' "$1" 2>/dev/null
+}
+
+safe_restart_reason() {
+  case "${1:-}" in
+    'port changed') printf 'port changed\n' ;;
+    'watchdog: launcher process exited') printf 'watchdog: launcher process exited\n' ;;
+    'manual restart') printf 'manual restart\n' ;;
+    'restore') printf 'restore\n' ;;
+    *) printf 'launcher restart\n' ;;
+  esac
+}
+
+record_restart_reason() {
+  restart_reason=$(safe_restart_reason "${1:-}")
+  printf '%s' "$restart_reason" > "$PICO_LAST_RESTART_REASON_FILE"
+  printf '%s\n' "$(current_epoch)" > "$PICO_LAST_RESTART_TIME_FILE"
+  chmod 0600 "$PICO_LAST_RESTART_REASON_FILE" "$PICO_LAST_RESTART_TIME_FILE" 2>/dev/null || true
+}
+
+record_start_metadata() {
+  start_epoch=$(current_epoch)
+  printf '%s\n' "$start_epoch" > "$PICO_ACTIVE_START_TIME_FILE"
+  printf '%s\n' "$start_epoch" > "$PICO_LAST_START_TIME_FILE"
+  chmod 0600 "$PICO_ACTIVE_START_TIME_FILE" "$PICO_LAST_START_TIME_FILE" 2>/dev/null || true
+}
+
+listener_is_active() {
+  listener_port=$1
+  listener_hex=$(printf '%04X' "$listener_port" 2>/dev/null || true)
+  [ -n "$listener_hex" ] || return 1
+  for listener_table in /proc/net/tcp /proc/net/tcp6; do
+    [ -r "$listener_table" ] || continue
+    if grep -Eq "^[[:space:]]*[0-9]+:[^[:space:]]+:$listener_hex[[:space:]]+[^[:space:]]+[[:space:]]+0A([[:space:]]|$)" "$listener_table" 2>/dev/null; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+binary_health_status() {
+  if [ -x "$PICO_CORE_BIN" ] && [ -x "$PICO_LAUNCHER_BIN" ]; then
+    printf 'ok\n'
+  else
+    printf 'error\n'
+  fi
+}
+
+permission_health_status() {
+  permission_error=0
+  for permission_file in "$PICO_CORE_BIN" "$PICO_LAUNCHER_BIN"; do
+    if [ ! -e "$permission_file" ] || [ -L "$permission_file" ] || [ ! -x "$permission_file" ]; then
+      permission_error=1
+    fi
+  done
+  if [ -e "$PICO_CONFIG" ] && {
+    [ -L "$PICO_CONFIG" ] || [ ! -r "$PICO_CONFIG" ] ||
+      [ "$(stat -c '%a' "$PICO_CONFIG" 2>/dev/null || printf '0')" -gt 600 ];
+  }; then
+    permission_error=1
+  fi
+  for permission_dir in "$PICO_DATA_DIR" "$PICO_RUN_DIR" "$PICO_LOG_DIR"; do
+    if [ ! -d "$permission_dir" ] || [ -L "$permission_dir" ]; then
+      permission_error=1
+    fi
+  done
+  if [ "$permission_error" -eq 0 ]; then
+    printf 'ok\n'
+  else
+    printf 'error\n'
+  fi
+}
+
+config_health_status() {
+  if [ -s "$PICO_CONFIG" ] && [ ! -L "$PICO_CONFIG" ] && [ -r "$PICO_CONFIG" ]; then
+    printf 'ok\n'
+  else
+    printf 'error\n'
+  fi
+}
+
+http_health_status() {
+  if launcher_is_running && listener_is_active "$(launcher_port)"; then
+    printf 'ok\n'
+  else
+    printf 'down\n'
+  fi
+}
+
+uptime_seconds() {
+  if ! launcher_is_running; then
+    printf '0\n'
+    return 0
+  fi
+  uptime_start=$(read_private_value "$PICO_ACTIVE_START_TIME_FILE")
+  uptime_now=$(current_epoch)
+  case "$uptime_start:$uptime_now" in
+    ''|*[!0-9:]*|*:*:*) printf '0\n' ;;
+    *)
+      if [ "$uptime_start" -le "$uptime_now" ]; then
+        printf '%s\n' $((uptime_now - uptime_start))
+      else
+        printf '0\n'
+      fi
+      ;;
+  esac
+}
+
+watchdog_health_status() {
+  if [ "$(read_setting AUTOSTART 1)" = 1 ] && [ ! -f "$PICO_MANUAL_STOP" ]; then
+    printf 'enabled\n'
+  else
+    printf 'disabled\n'
+  fi
+}
+
+last_restart_reason() {
+  reason_value=$(read_private_value "$PICO_LAST_RESTART_REASON_FILE")
+  if [ -z "$reason_value" ]; then
+    printf 'none\n'
+    return 0
+  fi
+  safe_restart_reason "$reason_value"
+}
+
+redact_log_stream() {
+  # Keep diagnostics useful while never echoing credential-shaped values.
+  # Patterns intentionally cover the common lower/upper case spellings used
+  # by launcher logs and HTTP clients; the value itself is never retained.
+  sed -E \
+    -e 's/([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn][[:space:]]*:[[:space:]]*[Bb][Ee][Aa][Rr][Ee][Rr][[:space:]]+)[^[:space:]]+/\1[REDACTED]/g' \
+    -e 's/([Aa][Uu][Tt][Hh][Oo][Rr][Ii][Zz][Aa][Tt][Ii][Oo][Nn])([[:space:]]*:[[:space:]]*")([^"]*)(")/\1\2[REDACTED]\4/g' \
+    -e 's/([Bb][Ee][Aa][Rr][Ee][Rr][[:space:]]+)[A-Za-z0-9._~+\/-]{8,}/\1[REDACTED]/g' \
+    -e 's/("([Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy])"[[:space:]]*:[[:space:]]*")[^"]*"/\1[REDACTED]"/g' \
+    -e 's/([Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Cc][Oo][Oo][Kk][Ii][Ee]|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy])([[:space:]]*:[[:space:]]*")([^"]*)(")/\1\2[REDACTED]\4/g' \
+    -e 's/((([Aa][Pp][Ii])[_-]?[Kk][Ee][Yy]|[Tt][Oo][Kk][Ee][Nn]|[Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]|[Pp][Aa][Ss][Ss][Ww][Dd]|[Ss][Ee][Cc][Rr][Ee][Tt]|[Cc][Oo][Oo][Kk][Ii][Ee])[[:space:]]*[:=][[:space:]]*)[^[:space:]]+)/\1[REDACTED]/g' \
+    -e 's/(sk-[A-Za-z0-9_-]{8,}|gh[pousr]_[A-Za-z0-9_-]{8,})/[REDACTED]/g'
 }
 
 launcher_host() {
@@ -222,6 +371,7 @@ launcher_start_unlocked() {
 
   sleep 1
   if launcher_is_running; then
+    record_start_metadata
     module_log "Launcher aktif di http://127.0.0.1:$launch_port (PID $launch_pid)."
     return 0
   fi
@@ -246,6 +396,7 @@ launcher_stop_unlocked() {
 
   if ! launcher_is_running; then
     rm -f "$PICO_PID_FILE"
+    rm -f "$PICO_ACTIVE_START_TIME_FILE"
     module_log "Launcher tidak sedang berjalan."
     return 0
   fi
@@ -265,6 +416,7 @@ launcher_stop_unlocked() {
     return 1
   fi
   rm -f "$PICO_PID_FILE"
+  rm -f "$PICO_ACTIVE_START_TIME_FILE"
   module_log "Launcher dihentikan."
 }
 
@@ -279,6 +431,8 @@ launcher_stop() {
 }
 
 launcher_restart_unlocked() {
+  restart_reason=${1:-manual restart}
+  record_restart_reason "$restart_reason"
   launcher_stop_unlocked || return 1
   launcher_start_unlocked
 }
@@ -315,6 +469,7 @@ launcher_watchdog_start() {
   if [ "$(read_setting AUTOSTART 1)" = 1 ] &&
     [ ! -f "$PICO_MANUAL_STOP" ] && ! launcher_is_running; then
     module_log 'Watchdog: Launcher terhenti. Memulai ulang service...'
+    record_restart_reason 'watchdog: launcher process exited'
     launcher_start_unlocked
     launcher_result=$?
   else

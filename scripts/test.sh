@@ -223,6 +223,34 @@ EOF
 CONTROL_STATUS="$(sh "$CONTROL_MODULE_DIR/control.sh" status)"
 grep -Fxq "MODULE_VERSION=$TEST_VERSION" <<< "$CONTROL_STATUS"
 grep -Fxq 'BINARY_VERSION=test-binary' <<< "$CONTROL_STATUS"
+for diagnostic_field in HTTP_STATUS UPTIME_SECONDS WATCHDOG_STATUS LAST_RESTART_REASON \
+  BINARY_STATUS PERMISSION_STATUS CONFIG_STATUS LISTENER_STATUS WRAPPER_STATUS; do
+  grep -q "^${diagnostic_field}=" <<< "$CONTROL_STATUS"
+done
+if grep -Eiq '(api[_-]?key|token|password|secret)=([^[:space:]]+)' <<< "$CONTROL_STATUS"; then
+  printf 'Status diagnostics membocorkan credential-shaped value.\n' >&2
+  exit 1
+fi
+
+printf '%s\n' \
+  '[PicoClaw] info token=should-not-appear' \
+  '[PicoClaw] warning password=also-secret authorization: Bearer abcdefghijklmnop' \
+  '[PicoClaw] error api_key=third-secret sk-live_123456789' \
+  '{"token":"quoted-secret","password":"quoted-password"}' > "$CONTROL_DATA_DIR/logs/launcher-module.log"
+REDACTED_LOG="$(sh "$CONTROL_MODULE_DIR/control.sh" logs 20)"
+grep -Fq 'token=[REDACTED]' <<< "$REDACTED_LOG"
+grep -Fq 'password=[REDACTED]' <<< "$REDACTED_LOG"
+grep -Fq 'authorization: Bearer [REDACTED]' <<< "$REDACTED_LOG"
+grep -Fq 'api_key=[REDACTED]' <<< "$REDACTED_LOG"
+grep -Fq '"token":"[REDACTED]"' <<< "$REDACTED_LOG"
+grep -Fq '"password":"[REDACTED]"' <<< "$REDACTED_LOG"
+grep -Fq '[REDACTED]' <<< "$REDACTED_LOG"
+if grep -Fq 'should-not-appear' <<< "$REDACTED_LOG" ||
+  grep -Fq 'also-secret' <<< "$REDACTED_LOG" ||
+  grep -Fq 'third-secret' <<< "$REDACTED_LOG"; then
+  printf 'Redaksi log gagal menyembunyikan credential.\n' >&2
+  exit 1
+fi
 
 # Launcher ports must remain in the non-privileged/browser-safe range. Legacy
 # unsafe values are read as the default without being allowed to bind them.

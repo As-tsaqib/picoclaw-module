@@ -29,6 +29,12 @@ release dari repository lain tidak diperlukan.
   source fork sudah berubah.
 - WebUI KSU Next untuk start/stop/restart launcher, autostart, status, log, dan
   pemasangan ulang wrapper Termux.
+- Kartu **Health & Diagnostics** menampilkan status HTTP, PID, uptime, waktu
+  start, watchdog, pemeriksaan binary/permission/config/listener/wrapper, serta
+  dapat menyalin laporan whitelist yang tidak berisi credential.
+- **Service Logs** mendukung filter error/warning/info, pause/live tail, nomor
+  baris, timestamp, export, wrap/raw mode, konfirmasi clear, dan redaksi
+  token/password/secret di backend maupun WebUI.
 - Launcher web berjalan otomatis di `http://127.0.0.1:18800` dan tidak diekspos
   ke jaringan lokal secara default. Port yang dapat dipilih berada pada rentang
   aman `1024–65535`; port sistem dan port yang diblokir browser ditolak.
@@ -98,6 +104,18 @@ launcher maupun metadata modul, sehingga tidak disarankan untuk instalasi ini.
 | `/data/adb/picoclaw/settings.conf` | Autostart, host, dan port launcher |
 | `/data/adb/picoclaw/logs/launcher-module.log` | Log service launcher |
 | `$PREFIX/bin/picoclaw*` | Wrapper kecil saja, bukan binary PicoClaw |
+
+Laporan diagnostics hanya memuat status dan metadata runtime yang aman. Isi
+`config.json`, API key, password, cookie, token, serta log credential tidak
+pernah disalin ke laporan. Log yang ditampilkan dan diekspor diredaksi dengan
+nilai `[REDACTED]`; mode **Raw log** hanya mempertahankan format whitespace dan
+tidak menonaktifkan redaksi.
+
+Service log memiliki batas ringkas (maksimum 500 baris per permintaan). **Pause**
+menahan snapshot lokal meskipun refresh status berkala tetap berjalan; **Live
+tail** kembali mengikuti log terbaru. Filter level bersifat heuristik dan
+mengklasifikasikan kata error/fatal/panic/gagal sebagai error, warn/warning
+sebagai warning, dan sisanya sebagai info.
 
 Backup/restore mengelola config, settings, workspace, credential PicoClaw,
 credential OAuth, konfigurasi/password dashboard, dan key SSH internal.
