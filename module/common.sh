@@ -126,7 +126,7 @@ listener_is_active() {
   [ -n "$listener_hex" ] || return 1
   for listener_table in /proc/net/tcp /proc/net/tcp6; do
     [ -r "$listener_table" ] || continue
-    if grep -Eq "^[[:space:]]*[0-9]+:[^[:space:]]+:${listener_hex}[[:space:]]+[^[:space:]]+[[:space:]]+0A([[:space:]]|$)" "$listener_table" 2>/dev/null; then
+    if grep -Eq "^[[:space:]]*[0-9]+:[[:space:]]+[^[:space:]]+:${listener_hex}[[:space:]]+[^[:space:]]+[[:space:]]+0A([[:space:]]|$)" "$listener_table" 2>/dev/null; then
       return 0
     fi
   done
