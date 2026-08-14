@@ -1,6 +1,6 @@
 # PicoClaw Module 1.0.0
 
-Dibangun dari fork [`53b6d6042151512f84dab51cdd19c85e0fa36055`](https://github.com/As-tsaqib/picoclaw/commit/53b6d6042151512f84dab51cdd19c85e0fa36055), ref `main`, dengan versi binary `v1.0.0`.
+Dibangun dari fork [`53b6d6042151512f84dab51cdd19c85e0fa36055`](https://github.com/As-tsaqib/picoclaw/commit/53b6d6042151512f84dab51cdd19c85e0fa36055), ref `main`, dengan versi binary `nightly`.
 
 ## Instalasi
 
