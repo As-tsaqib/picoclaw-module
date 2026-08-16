@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.1
+# PicoClaw Module 1.0.2
 
-Dibangun dari fork [`d9798513286b72d17135d996c22b33f39ecbdd8e`](https://github.com/As-tsaqib/picoclaw/commit/d9798513286b72d17135d996c22b33f39ecbdd8e), ref `main`, dengan versi binary `nightly-1-gd9798513`.
+Dibangun dari fork [`707ae510b06d6f6c367e824a1d0a02f8e7a080b6`](https://github.com/As-tsaqib/picoclaw/commit/707ae510b06d6f6c367e824a1d0a02f8e7a080b6), ref `main`, dengan versi binary `nightly-2-g707ae510`.
 
 ## Instalasi
 
@@ -13,5 +13,5 @@ Dibangun dari fork [`d9798513286b72d17135d996c22b33f39ecbdd8e`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat: supervise gateway process
+feat: add scoped Telegram sessions and rich command responses
 
