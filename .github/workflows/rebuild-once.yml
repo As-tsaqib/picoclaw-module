@@ -17,4 +17,4 @@ jobs:
       - name: Dispatch production module builder
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run build-fork.yml --ref main -f force=false -f publish=true
+        run: gh workflow run build-fork.yml --repo As-tsaqib/picoclaw-module --ref main -f force=false -f publish=true
