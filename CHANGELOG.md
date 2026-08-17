@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.2
+# PicoClaw Module 1.0.3
 
-Dibangun dari fork [`707ae510b06d6f6c367e824a1d0a02f8e7a080b6`](https://github.com/As-tsaqib/picoclaw/commit/707ae510b06d6f6c367e824a1d0a02f8e7a080b6), ref `main`, dengan versi binary `nightly-2-g707ae510`.
+Dibangun dari fork [`9b7d11f0dffa13bf1363acd983f5a1e9445c5249`](https://github.com/As-tsaqib/picoclaw/commit/9b7d11f0dffa13bf1363acd983f5a1e9445c5249), ref `main`, dengan versi binary `nightly-1-g9b7d11f0`.
 
 ## Instalasi
 
@@ -13,5 +13,7 @@ Dibangun dari fork [`707ae510b06d6f6c367e824a1d0a02f8e7a080b6`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat: add scoped Telegram sessions and rich command responses
+feat: add session-scoped model dashboard
+
+Adds session-scoped model selection, Telegram model dashboard hardening, persistent credential-free model overrides, provider discovery/lifecycle hardening, and scoped Telegram session actions.
 
