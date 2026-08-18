@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.4
+# PicoClaw Module 1.0.5
 
-Dibangun dari fork [`31d584912e0d9cac5b3701ea0df210f5d86db23a`](https://github.com/As-tsaqib/picoclaw/commit/31d584912e0d9cac5b3701ea0df210f5d86db23a), ref `main`, dengan versi binary `nightly-2-g31d58491`.
+Dibangun dari fork [`9cdb96ee63bce5ba9ff7aff9f3e6ef6445922339`](https://github.com/As-tsaqib/picoclaw/commit/9cdb96ee63bce5ba9ff7aff9f3e6ef6445922339), ref `main`, dengan versi binary `nightly-1-g9cdb96ee`.
 
 ## Instalasi
 
@@ -13,7 +13,17 @@ Dibangun dari fork [`31d584912e0d9cac5b3701ea0df210f5d86db23a`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-fix: harden Antigravity auth and model discovery (#8)
+feat(memory): add durable personal agent memory (#11)
 
-Hardens Antigravity OAuth refresh coordination, token rotation, HTTP 401 recovery, dynamic model discovery, cache/account isolation, cancellation, and credential safety while preserving existing session-scoped model/session behavior.
+* ci: add personal memory race acceptance
+
+* feat(memory): add durable personal agent memory
+
+* fix(memory): satisfy static analysis
+
+* chore: retrigger exact-head validation
+
+---------
+
+Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
 
