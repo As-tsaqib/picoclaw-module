@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.3
+# PicoClaw Module 1.0.4
 
-Dibangun dari fork [`9b7d11f0dffa13bf1363acd983f5a1e9445c5249`](https://github.com/As-tsaqib/picoclaw/commit/9b7d11f0dffa13bf1363acd983f5a1e9445c5249), ref `main`, dengan versi binary `nightly-1-g9b7d11f0`.
+Dibangun dari fork [`31d584912e0d9cac5b3701ea0df210f5d86db23a`](https://github.com/As-tsaqib/picoclaw/commit/31d584912e0d9cac5b3701ea0df210f5d86db23a), ref `main`, dengan versi binary `nightly-2-g31d58491`.
 
 ## Instalasi
 
@@ -13,7 +13,7 @@ Dibangun dari fork [`9b7d11f0dffa13bf1363acd983f5a1e9445c5249`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat: add session-scoped model dashboard
+fix: harden Antigravity auth and model discovery (#8)
 
-Adds session-scoped model selection, Telegram model dashboard hardening, persistent credential-free model overrides, provider discovery/lifecycle hardening, and scoped Telegram session actions.
+Hardens Antigravity OAuth refresh coordination, token rotation, HTTP 401 recovery, dynamic model discovery, cache/account isolation, cancellation, and credential safety while preserving existing session-scoped model/session behavior.
 
