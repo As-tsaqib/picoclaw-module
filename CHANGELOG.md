@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.9
+# PicoClaw Module 1.0.10
 
-Dibangun dari fork [`8d80aa544f77b6d9ac218893c8589a687f076ee7`](https://github.com/As-tsaqib/picoclaw/commit/8d80aa544f77b6d9ac218893c8589a687f076ee7), ref `main`, dengan versi binary `nightly-1-g8d80aa54`.
+Dibangun dari fork [`45a91170673aa8cec55e395c8bf446179e623156`](https://github.com/As-tsaqib/picoclaw/commit/45a91170673aa8cec55e395c8bf446179e623156), ref `main`, dengan versi binary `nightly-2-g45a91170`.
 
 ## Instalasi
 
@@ -13,57 +13,91 @@ Dibangun dari fork [`8d80aa544f77b6d9ac218893c8589a687f076ee7`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat(telegram): add interactive skill and checkpoint flows (#19)
+fix(telegram): harden search continuation UX (#20)
 
-* chore(pr19): stage exact interaction patch
+* chore(pr20): apply bounded search continuation patch
 
-* feat(telegram): add skill and checkpoint interactions
+* chore(pr20): arm PR-scoped continuation patch runner
 
-* fix(telegram): bound interactive skill search query
+* chore(pr20): align help acceptance with picker usage
 
-* chore(pr19): stage PR17 route restore
+* fix(telegram): harden search interaction continuations
 
-* fix(telegram): preserve PR17 topic route binding
+* test(telegram): cover search continuation lifecycle
 
-* chore(ci): revalidate final interaction tree
+* test(agent): cover search semantics and stable navigation
 
-* style(telegram): gofmt skill interaction constants
+* test(agent): fix model state decoding import
 
-* chore(pr19): stage exact lint normalization
+* chore(pr20): validate and format acceptance coverage
 
-* chore(pr19): arm exact lint normalization
+* test(telegram): validate search continuation acceptance
 
-* chore(pr19): run exact lint normalizer
+* test(telegram): cover private memory search continuation
 
-* chore(pr19): finalize lint normalization runner
+* test(agent): cover bounded memory search input
 
-* chore(ci): restore build workflow
+* chore(pr20): finalize exact lint and acceptance validation
 
-* chore(ci): remove PR19 lint helper
+* chore(pr20): trigger exact lint finalizer
 
-* test(telegram): stage final interaction acceptance coverage
+* chore(pr20): run registered exact formatter gate
 
-* chore(ci): make PR19 formatter finalizer bounded
+* chore(pr20): allow explicit reopened formatter trigger
 
-* style(telegram): fix checkpoint command lint
+* chore(pr20): arm push-based exact lint finalizer
 
-* style(telegram): wrap checkpoint command definitions
+* chore(pr20): trigger push-based exact lint finalizer
 
-* style(telegram): format interaction tests
+* style(telegram): normalize checkpoint semantic service
 
-* style(telegram): format checkpoint interaction flow
+* chore(pr20): replace stale lint finalizer
 
-* style(telegram): format prompt ownership test
+* chore(pr20): arm simplified push lint finalizer
 
-* style(telegram): format skill interaction flow
+* chore(pr20): trigger armed push lint finalizer
 
-* chore(ci): remove temporary PR19 formatter
+* style(telegram): wrap stable skill detail state
 
-* chore(ci): run bounded PR19 formatter
+* chore(pr20): fix lint finalizer workflow syntax
 
-* style(telegram): finalize interaction formatting
+* chore(pr20): trigger valid push lint finalizer
 
-* chore(ci): validate final PR19 head
+* test(telegram): finalize continuation hardening coverage
+
+* chore(pr20): arm actionlint-safe exact formatter gate
+
+* test(telegram): finalize continuation hardening coverage
+
+* chore(pr20): remove unrelated formatter drift
+
+* test(agent): pin search callback to bound session
+
+* test(agent): align bound-session fixture with scoped session tests
+
+* fix(telegram): require continuation interaction establishment
+
+* fix(telegram): make append continuation delivery strict
+
+* test(telegram): preserve old menu when continuation setup fails
+
+* fix(telegram): bind continuation postcondition to message identity
+
+* test(telegram): cover continuation registration eviction
+
+* fix(telegram): scope continuation cleanup to route
+
+* fix(telegram): require actionable continuation markup
+
+* test(telegram): require actionable continuation keyboard
+
+* fix(checkpoint): preserve page when backing from detail
+
+* test(checkpoint): assert detail back preserves origin page
+
+* fix(use): document no-argument fallback flow
+
+* test(use): require no-argument fallback guidance
 
 ---------
 
