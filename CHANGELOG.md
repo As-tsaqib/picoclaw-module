@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.7
+# PicoClaw Module 1.0.8
 
-Dibangun dari fork [`b7fe148714b675a2befc26d86e7f8d09a7769d08`](https://github.com/As-tsaqib/picoclaw/commit/b7fe148714b675a2befc26d86e7f8d09a7769d08), ref `main`, dengan versi binary `nightly-2-gb7fe1487`.
+Dibangun dari fork [`b099278e41ab3a4913841e39c6a7f560f11ed96f`](https://github.com/As-tsaqib/picoclaw/commit/b099278e41ab3a4913841e39c6a7f560f11ed96f), ref `main`, dengan versi binary `nightly-3-gb099278e`.
 
 ## Instalasi
 
@@ -13,7 +13,7 @@ Dibangun dari fork [`b7fe148714b675a2befc26d86e7f8d09a7769d08`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat(telegram): add interactive command UX and formatted ephemeral fallback (#17)
+fix(web): retry gateway autostart after boot readiness (#18)
 
-Implement receiver-safe formatted ephemeral StructuredContent fallback, secure interactive /memory UX, compact /help, and related privacy/callback hardening while preserving existing command compatibility and native Rich Message behavior.
+Arm gateway keep-alive before boot readiness validation so the launcher watchdog retries startup after transient configuration or credential readiness failures. Preserve explicit stop behavior and cover recovery with a regression test.
 
