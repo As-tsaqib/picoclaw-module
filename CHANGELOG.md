@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.10
+# PicoClaw Module 1.0.11
 
-Dibangun dari fork [`45a91170673aa8cec55e395c8bf446179e623156`](https://github.com/As-tsaqib/picoclaw/commit/45a91170673aa8cec55e395c8bf446179e623156), ref `main`, dengan versi binary `nightly-2-g45a91170`.
+Dibangun dari fork [`c4699a43eecb83dafb18e416fbe6733b12e403df`](https://github.com/As-tsaqib/picoclaw/commit/c4699a43eecb83dafb18e416fbe6733b12e403df), ref `main`, dengan versi binary `nightly-3-gc4699a43`.
 
 ## Instalasi
 
@@ -13,93 +13,76 @@ Dibangun dari fork [`45a91170673aa8cec55e395c8bf446179e623156`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-fix(telegram): harden search continuation UX (#20)
+feat(telegram): add interactive discovery and status UX (#21)
 
-* chore(pr20): apply bounded search continuation patch
+* feat(commands): add discovery status semantics
 
-* chore(pr20): arm PR-scoped continuation patch runner
+* feat(commands): add discovery dashboard adapter
 
-* chore(pr20): align help acceptance with picker usage
+* feat(commands): make show session-aware and interactive
 
-* fix(telegram): harden search interaction continuations
+* feat(commands): delegate discovery catalogs
 
-* test(telegram): cover search continuation lifecycle
+* refactor(commands): make channel checks read only
 
-* test(agent): cover search semantics and stable navigation
+* fix(commands): sort agent discovery output
 
-* test(agent): fix model state decoding import
+* fix(commands): sort MCP discovery output
 
-* chore(pr20): validate and format acceptance coverage
+* feat(agent): allowlist discovery callbacks
 
-* test(telegram): validate search continuation acceptance
+* feat(agent): configure session-bound discovery semantics
 
-* test(telegram): cover private memory search continuation
+* feat(agent): add discovery and status interaction domain
 
-* test(agent): cover bounded memory search input
+* fix(commands): keep model inventory truthful
 
-* chore(pr20): finalize exact lint and acceptance validation
+* fix(commands): sanitize read-only channel status failures
 
-* chore(pr20): trigger exact lint finalizer
+* test(commands): cover discovery and read-only status semantics
 
-* chore(pr20): run registered exact formatter gate
+* test(agent): cover discovery status interaction semantics
 
-* chore(pr20): allow explicit reopened formatter trigger
+* test(telegram): cover discovery status interaction transport
 
-* chore(pr20): arm push-based exact lint finalizer
+* fix(telegram): admit bound discovery interactions
 
-* chore(pr20): trigger push-based exact lint finalizer
+* test(agent): prove discovery refresh and domain handoff authority
 
-* style(telegram): normalize checkpoint semantic service
+* test(telegram): reject stale discovery tokens
 
-* chore(pr20): replace stale lint finalizer
+* style(agent): gofmt discovery interaction tests
 
-* chore(pr20): arm simplified push lint finalizer
+* feat(agent): expose read-only channel status source
 
-* chore(pr20): trigger armed push lint finalizer
+* feat(agent): delegate channel status snapshot
 
-* style(telegram): wrap stable skill detail state
+* test(agent): satisfy channel status manager contract
 
-* chore(pr20): fix lint finalizer workflow syntax
+* test(agent): fix channel manager status double
 
-* chore(pr20): trigger valid push lint finalizer
+* fix(commands): preserve list help wording
 
-* test(telegram): finalize continuation hardening coverage
+* test(commands): align check coverage with read-only status
 
-* chore(pr20): arm actionlint-safe exact formatter gate
+* test(telegram): deduplicate discovery binding matrix
 
-* test(telegram): finalize continuation hardening coverage
+* test(commands): format discovery handler setup
 
-* chore(pr20): remove unrelated formatter drift
+* fix(commands): preserve show model fallback compatibility
 
-* test(agent): pin search callback to bound session
+* style(telegram): wrap discovery interaction transport
 
-* test(agent): align bound-session fixture with scoped session tests
+* style(commands): wrap unknown channel status fixture
 
-* fix(telegram): require continuation interaction establishment
+* fix(agent): align show-model test assertions with display-formatted provider names
 
-* fix(telegram): make append continuation delivery strict
-
-* test(telegram): preserve old menu when continuation setup fails
-
-* fix(telegram): bind continuation postcondition to message identity
-
-* test(telegram): cover continuation registration eviction
-
-* fix(telegram): scope continuation cleanup to route
-
-* fix(telegram): require actionable continuation markup
-
-* test(telegram): require actionable continuation keyboard
-
-* fix(checkpoint): preserve page when backing from detail
-
-* test(checkpoint): assert detail back preserves origin page
-
-* fix(use): document no-argument fallback flow
-
-* test(use): require no-argument fallback guidance
+The /show model path now uses displayProvider() which title-cases
+provider names (e.g. 'openrouter' -> 'Openrouter'). The fallback
+line assembled by prependCurrentModelFallback reads the formatted
+name from the table rows, so the expected test strings must match.
 
 ---------
 
-Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+Co-authored-by: Assaqib <264941327+As-tsaqib@users.noreply.github.com>
 
