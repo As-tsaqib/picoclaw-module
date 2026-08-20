@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.8
+# PicoClaw Module 1.0.9
 
-Dibangun dari fork [`b099278e41ab3a4913841e39c6a7f560f11ed96f`](https://github.com/As-tsaqib/picoclaw/commit/b099278e41ab3a4913841e39c6a7f560f11ed96f), ref `main`, dengan versi binary `nightly-3-gb099278e`.
+Dibangun dari fork [`8d80aa544f77b6d9ac218893c8589a687f076ee7`](https://github.com/As-tsaqib/picoclaw/commit/8d80aa544f77b6d9ac218893c8589a687f076ee7), ref `main`, dengan versi binary `nightly-1-g8d80aa54`.
 
 ## Instalasi
 
@@ -13,7 +13,59 @@ Dibangun dari fork [`b099278e41ab3a4913841e39c6a7f560f11ed96f`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-fix(web): retry gateway autostart after boot readiness (#18)
+feat(telegram): add interactive skill and checkpoint flows (#19)
 
-Arm gateway keep-alive before boot readiness validation so the launcher watchdog retries startup after transient configuration or credential readiness failures. Preserve explicit stop behavior and cover recovery with a regression test.
+* chore(pr19): stage exact interaction patch
+
+* feat(telegram): add skill and checkpoint interactions
+
+* fix(telegram): bound interactive skill search query
+
+* chore(pr19): stage PR17 route restore
+
+* fix(telegram): preserve PR17 topic route binding
+
+* chore(ci): revalidate final interaction tree
+
+* style(telegram): gofmt skill interaction constants
+
+* chore(pr19): stage exact lint normalization
+
+* chore(pr19): arm exact lint normalization
+
+* chore(pr19): run exact lint normalizer
+
+* chore(pr19): finalize lint normalization runner
+
+* chore(ci): restore build workflow
+
+* chore(ci): remove PR19 lint helper
+
+* test(telegram): stage final interaction acceptance coverage
+
+* chore(ci): make PR19 formatter finalizer bounded
+
+* style(telegram): fix checkpoint command lint
+
+* style(telegram): wrap checkpoint command definitions
+
+* style(telegram): format interaction tests
+
+* style(telegram): format checkpoint interaction flow
+
+* style(telegram): format prompt ownership test
+
+* style(telegram): format skill interaction flow
+
+* chore(ci): remove temporary PR19 formatter
+
+* chore(ci): run bounded PR19 formatter
+
+* style(telegram): finalize interaction formatting
+
+* chore(ci): validate final PR19 head
+
+---------
+
+Co-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
 
