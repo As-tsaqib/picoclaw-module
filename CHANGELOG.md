@@ -1,6 +1,6 @@
-# PicoClaw Module 1.0.11
+# PicoClaw Module 1.0.12
 
-Dibangun dari fork [`c4699a43eecb83dafb18e416fbe6733b12e403df`](https://github.com/As-tsaqib/picoclaw/commit/c4699a43eecb83dafb18e416fbe6733b12e403df), ref `main`, dengan versi binary `nightly-3-gc4699a43`.
+Dibangun dari fork [`197f457a7bc4b4238bcb230d1a1e32bbc270590f`](https://github.com/As-tsaqib/picoclaw/commit/197f457a7bc4b4238bcb230d1a1e32bbc270590f), ref `main`, dengan versi binary `nightly-1-g197f457a`.
 
 ## Instalasi
 
@@ -13,74 +13,119 @@ Dibangun dari fork [`c4699a43eecb83dafb18e416fbe6733b12e403df`](https://github.c
 
 > Build menerapkan patch kompatibilitas system tray Android yang tersedia di repo modul.
 
-feat(telegram): add interactive discovery and status UX (#21)
+Unify slash-command semantics and safety (#22)
 
-* feat(commands): add discovery status semantics
+* refactor(commands): add canonical discovery metadata
 
-* feat(commands): add discovery dashboard adapter
+* feat(commands): add safe user error boundary
 
-* feat(commands): make show session-aware and interactive
+* fix(commands): fail closed on unknown slash commands
 
-* feat(commands): delegate discovery catalogs
+* fix(commands): separate new from clear semantics
 
-* refactor(commands): make channel checks read only
+* feat(commands): add session new shortcut
 
-* fix(commands): sort agent discovery output
+* feat(commands): register canonical new command
 
-* fix(commands): sort MCP discovery output
+* fix(commands): sanitize session command errors
 
-* feat(agent): allowlist discovery callbacks
+* refactor(commands): expand typed semantic requests
 
-* feat(agent): configure session-bound discovery semantics
+* refactor(commands): route memory through typed semantic API
 
-* feat(agent): add discovery and status interaction domain
+* refactor(commands): formalize switch compatibility
 
-* fix(commands): keep model inventory truthful
+* feat(commands): canonicalize checkpoint archive
 
-* fix(commands): sanitize read-only channel status failures
+* fix(commands): sanitize canonical model semantics
 
-* test(commands): cover discovery and read-only status semantics
+* feat(commands): derive rich help from registry metadata
 
-* test(agent): cover discovery status interaction semantics
+* feat(bus): add reusable structured card typography
 
-* test(telegram): cover discovery status interaction transport
+* feat(commands): apply contextual card headers
 
-* fix(telegram): admit bound discovery interactions
+* feat(commands): add lightweight accurate onboarding
 
-* test(agent): prove discovery refresh and domain handoff authority
+* refactor(commands): clarify mcp inventory and detail semantics
 
-* test(telegram): reject stale discovery tokens
+* fix(agent): sanitize user-facing processing errors
 
-* style(agent): gofmt discovery interaction tests
+* feat(commands): normalize use command intent parsing
 
-* feat(agent): expose read-only channel status source
+* docs(commands): clarify normalized use forms
 
-* feat(agent): delegate channel status snapshot
+* refactor(agent): centralize typed memory semantics
 
-* test(agent): satisfy channel status manager contract
+* refactor(agent): route memory callbacks through typed semantics
 
-* test(agent): fix channel manager status double
+* refactor(agent): use typed memory callback router
 
-* fix(commands): preserve list help wording
+* refactor(commands): normalize use intent and wire typed memory semantics
 
-* test(commands): align check coverage with read-only status
+* fix(commands): return structured skill picker correctly
 
-* test(telegram): deduplicate discovery binding matrix
+* test(commands): cover slash semantic consistency contracts
 
-* test(commands): format discovery handler setup
+* test(agent): preserve use helper compatibility during semantic consolidation
 
-* fix(commands): preserve show model fallback compatibility
+* fix(commands): sanitize discovery errors
 
-* style(telegram): wrap discovery interaction transport
+* fix(commands): keep readable help fallback compatible
 
-* style(commands): wrap unknown channel status fixture
+* test(commands): align switch replacement with canonical model syntax
 
-* fix(agent): align show-model test assertions with display-formatted provider names
+* test(agent): assert user-facing provider errors are sanitized
 
-The /show model path now uses displayProvider() which title-cases
-provider names (e.g. 'openrouter' -> 'Openrouter'). The fallback
-line assembled by prependCurrentModelFallback reads the formatted
-name from the table rows, so the expected test strings must match.
+* fix(discovery): distinguish MCP status from inventory
+
+* fix(discovery): layer MCP status semantics after base discovery
+
+* fix(commands): sanitize show errors and use card headers
+
+* style(commands): gofmt structured card helpers
+
+* fix(commands): preserve use help compatibility wording
+
+* fix(commands): preserve MCP tool detail compatibility
+
+* fix(commands): unify slash-command semantics and safety
+
+This aligns the test assertions with the final normative semantics:
+- /switch model delegates to ModelCommand
+- /memory routes via typed MemoryCommand
+- Unknown slash commands fail closed
+- Remove dead memory and structured format helpers
+- Align user-facing error formatting assertions
+- Checkpoint archive semantic alias checks
+
+* style: fix linter errors (golines, unused, misspell)
+
+* style: fix remaining golines and unused warnings
+
+* style: fix remaining golines and gci formatting issues
+
+* style: wrap MCP tool sorting comparator
+
+Keep the MCP command handler compatible with the repository's golines validation.
+
+* style: wrap MCP detail response
+
+Keep the MCP command handler compliant with the repository's golines validation.
+
+* fix(commands): close semantic consistency audit gaps
+
+Sanitize remaining command errors, normalize contextual card typography at text and callback presentation boundaries, group structured help by canonical categories, and add AgentLoop /new safety coverage.
+
+* fix: complete final slash command validation
+
+Resolve the remaining formatter and structured help test failures without changing command semantics.
+
+* fix(telegram): center native table headers
+
+Center Telegram native rich-table header cells while preserving left-aligned body cells and existing vertical alignment. Add focused renderer coverage for alignment, captions, table styling, values, and contextual headers.
+
+* style(telegram): format native table alignment test
 
 ---------
 

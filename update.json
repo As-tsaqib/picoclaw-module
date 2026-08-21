@@ -1,7 +1,7 @@
 {
-  "version": "1.0.11",
-  "versionCode": 1000011,
-  "zipUrl": "https://github.com/As-tsaqib/picoclaw-module/releases/download/1.0.11/PicoClaw-Module-1.0.11-arm64.zip",
+  "version": "1.0.12",
+  "versionCode": 1000012,
+  "zipUrl": "https://github.com/As-tsaqib/picoclaw-module/releases/download/1.0.12/PicoClaw-Module-1.0.12-arm64.zip",
   "changelog": "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/CHANGELOG.md",
   "banner": "https://raw.githubusercontent.com/As-tsaqib/picoclaw-module/main/banner.png"
 }
